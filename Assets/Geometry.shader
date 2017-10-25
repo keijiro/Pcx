@@ -4,11 +4,13 @@
     {
         [HDR] _Color("Tint", Color) = (1, 1, 1, 1)
         _PointSize("Point Size", Float) = 0.05
-        _PointLod("Point LOD", Float) = 0.5
     }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
+
+        Cull Off
+
         Pass
         {
             CGPROGRAM
@@ -35,7 +37,6 @@
 
             half4 _Color;
             half _PointSize;
-            half _PointLod;
 
             Varyings Vertex(Attributes input)
             {
@@ -50,36 +51,42 @@
             void Geometry(point Varyings input[1], inout TriangleStream<Varyings> outStream)
             {
                 float4 origin = input[0].position;
-                float2 extent = UNITY_MATRIX_P._11_22 * _PointSize;
+                float2 extent = abs(UNITY_MATRIX_P._11_22 * _PointSize);
 
+                // Copy the basic information.
                 Varyings o;
                 o.color = input[0].color;
                 COPY_FOG(o, input[0]);
 
-                // top
+                // Determine the number of slices based on the radius of the
+                // point on the screen.
+                float radius = extent.y / origin.w * _ScreenParams.y;
+                uint slices = min((radius + 1) / 5, 4) + 2;
+
+                // Slightly enlarge quad points to compensate area reduction.
+                // Hopefully this line would be complied without branch.
+                if (slices == 2) extent *= 1.2;
+
+                // Top vertex
                 o.position.y = origin.y + extent.y;
                 o.position.xzw = origin.xzw;
                 outStream.Append(o);
 
-                // LOD calculation based on screen space radius
-                float lod = saturate(extent.y / origin.w * _PointLod * 50);
-                uint div = lod * 4 + 2;
-
-                UNITY_LOOP for (uint i = 1; i < div; i++)
+                UNITY_LOOP for (uint i = 1; i < slices; i++)
                 {
                     float sn, cs;
-                    sincos(UNITY_PI / div * i, sn, cs);
+                    sincos(UNITY_PI / slices * i, sn, cs);
 
-                    // right
+                    // Right side vertex
                     o.position.xy = origin.xy + extent * float2(sn, cs);
                     outStream.Append(o);
 
-                    // left
+                    // Left side vertex
                     o.position.x = origin.x - extent.x * sn;
                     outStream.Append(o);
                 }
 
-                // bottom
+                // Bottom vertex
                 o.position.x = origin.x;
                 o.position.y = origin.y - extent.y;
                 outStream.Append(o);
