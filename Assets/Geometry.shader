@@ -1,9 +1,10 @@
-﻿Shader "Plypc/Point Cloud (geometry shader)"
+﻿Shader "Point Cloud/Geometry Shader"
 {
     Properties
     {
         [HDR] _Color("Tint", Color) = (1, 1, 1, 1)
-        _BaseSize("Point Size", Float) = 0.1
+        _PointSize("Point Size", Float) = 0.05
+        _PointLod("Point LOD", Float) = 0.5
     }
     SubShader
     {
@@ -22,40 +23,34 @@
             struct Attributes
             {
                 float4 position : POSITION;
-                fixed4 color : COLOR;
-            };
-
-            struct GeometryInput
-            {
-                float4 position : SV_POSITION;
-                fixed4 color : COLOR;
-                UNITY_FOG_COORDS(1)
+                half4 color : COLOR;
             };
 
             struct Varyings
             {
                 float4 position : SV_POSITION;
-                fixed4 color : COLOR;
+                half4 color : COLOR;
                 UNITY_FOG_COORDS(1)
             };
 
             half4 _Color;
-            half _BaseSize;
+            half _PointSize;
+            half _PointLod;
 
-            GeometryInput Vertex(Attributes input)
+            Varyings Vertex(Attributes input)
             {
-                GeometryInput o;
+                Varyings o;
                 o.position = UnityObjectToClipPos(input.position);
-                o.color = input.color * fixed4(_Color.rgb * 2, _Color.a);
+                o.color = input.color * _Color;
                 UNITY_TRANSFER_FOG(o, o.position);
                 return o;
             }
 
             [maxvertexcount(36)]
-            void Geometry(point GeometryInput input[1], inout TriangleStream<Varyings> outStream)
+            void Geometry(point Varyings input[1], inout TriangleStream<Varyings> outStream)
             {
                 float4 origin = input[0].position;
-                float2 extent = UNITY_MATRIX_P._11_22 * _BaseSize;
+                float2 extent = UNITY_MATRIX_P._11_22 * _PointSize;
 
                 Varyings o;
                 o.color = input[0].color;
@@ -66,7 +61,9 @@
                 o.position.xzw = origin.xzw;
                 outStream.Append(o);
 
-                uint div = saturate(abs(extent.y / origin.w * 25)) * 4 + 2;
+                // LOD calculation based on screen space radius
+                float lod = saturate(extent.y / origin.w * _PointLod * 50);
+                uint div = lod * 4 + 2;
 
                 UNITY_LOOP for (uint i = 1; i < div; i++)
                 {
@@ -90,9 +87,9 @@
                 outStream.RestartStrip();
             }
 
-            fixed4 Fragment(Varyings input) : SV_Target
+            half4 Fragment(Varyings input) : SV_Target
             {
-                fixed4 c = input.color;
+                half4 c = input.color;
                 UNITY_APPLY_FOG(input.fogCoord, c);
                 return c;
             }

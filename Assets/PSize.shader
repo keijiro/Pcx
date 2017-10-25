@@ -1,9 +1,9 @@
-﻿Shader "Plypc/Point Cloud (point primitives)"
+﻿Shader "Point Cloud/Point Primitive"
 {
     Properties
     {
         [HDR] _Color("Tint", Color) = (1, 1, 1, 1)
-        _BaseSize("Point Size", Float) = 0.1
+        _PointSize("Point Size", Float) = 0.05
     }
     SubShader
     {
@@ -21,33 +21,33 @@
             struct Attributes
             {
                 float4 position : POSITION;
-                fixed4 color : COLOR;
+                half4 color : COLOR;
             };
 
             struct Varyings
             {
                 float4 position : SV_POSITION;
-                fixed4 color : COLOR;
+                half4 color : COLOR;
                 float psize : PSIZE;
                 UNITY_FOG_COORDS(1)
             };
 
             half4 _Color;
-            half _BaseSize;
+            half _PointSize;
 
             Varyings Vertex(Attributes input)
             {
                 Varyings o;
                 o.position = UnityObjectToClipPos(input.position);
-                o.color = input.color * fixed4(_Color.rgb * 2, _Color.a);
-                o.psize = _BaseSize / o.position.w * _ScreenParams.y;
+                o.color = input.color * _Color;
+                o.psize = _PointSize / o.position.w * _ScreenParams.y;
                 UNITY_TRANSFER_FOG(o, o.position);
                 return o;
             }
 
-            fixed4 Fragment(Varyings input) : SV_Target
+            half4 Fragment(Varyings input) : SV_Target
             {
-                fixed4 c = input.color;
+                half4 c = input.color;
                 UNITY_APPLY_FOG(input.fogCoord, c);
                 return c;
             }
