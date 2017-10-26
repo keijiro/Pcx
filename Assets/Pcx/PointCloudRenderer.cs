@@ -29,6 +29,7 @@ namespace Pcx
         ComputeBuffer _positionBuffer;
         ComputeBuffer _colorBuffer;
         ComputeBuffer _triangleBuffer;
+        ComputeBuffer _drawArgsBuffer;
 
         #endregion
 
@@ -47,10 +48,12 @@ namespace Pcx
                 _positionBuffer.Release();
                 _colorBuffer.Release();
                 _triangleBuffer.Release();
+                _drawArgsBuffer.Release();
 
                 _positionBuffer = null;
                 _colorBuffer = null;
                 _triangleBuffer = null;
+                _drawArgsBuffer = null;
             }
         }
 
@@ -90,9 +93,15 @@ namespace Pcx
                 _colorBuffer = _source.CreateColorBuffer();
 
                 _triangleBuffer = new ComputeBuffer(
-                    _source.pointCount, sizeof(float) * 4 * 4,
+                    _source.pointCount * 16, sizeof(float) * 4 * 4,
                     ComputeBufferType.Append
                 );
+
+                _drawArgsBuffer = new ComputeBuffer(
+                    1, 5 * sizeof(uint),
+                    ComputeBufferType.IndirectArguments
+                );
+                _drawArgsBuffer.SetData(new uint[] { 3000000, 1, 0, 0, 0 });
             }
         }
 
@@ -111,21 +120,26 @@ namespace Pcx
             }
             else
             {
-                var pm = GL.GetGPUProjectionMatrix(Camera.current.projectionMatrix, false);
-                var vm = Camera.current.worldToCameraMatrix;
-                var kernel = _converter.FindKernel("Main");
+                var proj = GL.GetGPUProjectionMatrix(Camera.current.projectionMatrix, true);
+                var view = Camera.current.worldToCameraMatrix;
 
                 _converter.SetVector("Tint", _pointColor);
-                _converter.SetMatrix("Transform", pm * vm * transform.localToWorldMatrix);
+                _converter.SetVector("Extent", new Vector2(proj[0, 0], proj[1, 1]) * _pointSize);
+                _converter.SetMatrix("Transform", proj * view * transform.localToWorldMatrix);
+
+                var kernel = _converter.FindKernel("Main");
                 _converter.SetBuffer(kernel, "PositionBuffer", _positionBuffer);
                 _converter.SetBuffer(kernel, "ColorBuffer", _colorBuffer);
                 _converter.SetBuffer(kernel, "TriangleBuffer", _triangleBuffer);
+
                 _triangleBuffer.SetCounterValue(0);
                 _converter.Dispatch(kernel, _source.pointCount / 128, 1, 1);
 
+                //ComputeBuffer.CopyCount(_triangleBuffer, _drawArgsBuffer, 4);
+
                 _discMaterial.SetPass(0);
                 _discMaterial.SetBuffer("_TriangleBuffer", _triangleBuffer);
-                Graphics.DrawProcedural(MeshTopology.Triangles, 3 * _source.pointCount);
+                Graphics.DrawProceduralIndirect(MeshTopology.Triangles, _drawArgsBuffer, 0);
             }
         }
 

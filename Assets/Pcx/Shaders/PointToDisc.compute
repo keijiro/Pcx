@@ -15,23 +15,47 @@ AppendStructuredBuffer<Triangle> TriangleBuffer;
 
 CBUFFER_START(Params)
     float4 Tint;
+    float2 Extent;
     float4x4 Transform;
 CBUFFER_END
 
 [numthreads(128, 1, 1)]
 void Main(uint id : SV_DispatchThreadID)
 {
-    float4 pos = float4(PositionBuffer[id].xyz, 1);
-    float4 col = UnpackColor32(ColorBuffer[id]);
-
-     //mul(UNITY_MATRIX_VP, mul(unity_ObjectToWorld, float4(pos, 1.0)));
-
-     pos = mul(Transform, pos);
+    float4 origin = mul(Transform, float4(PositionBuffer[id].xyz, 1));
+    float4 color = UnpackColor32(ColorBuffer[id]) * Tint;
 
     Triangle o;
-    o.vertices[0] = pos;
-    o.vertices[1] = pos + float4(0.1, 0, 0, 0);
-    o.vertices[2] = pos + float4(0, 0.1, 0, 0);
-    o.color = col * Tint;
+    o.color = color;
+
+    uint slices = 4;
+
+    float sn, cs;
+    sincos(UNITY_PI / slices, sn, cs);
+
+    o.vertices[0] = origin + float4(0, Extent.y, 0, 0);
+    o.vertices[1] = origin + float4(Extent * float2(-sn, cs), 0, 0);
+    o.vertices[2] = origin + float4(Extent * float2(+sn, cs), 0, 0);
+    TriangleBuffer.Append(o);
+
+    UNITY_LOOP for (uint i = 2; i < slices; i++)
+    {
+        float sn, cs;
+        sincos(UNITY_PI / slices * i, sn, cs);
+
+        o.vertices[0] = o.vertices[1];
+        o.vertices[1] = o.vertices[2];
+        o.vertices[2] = origin + float4(Extent * float2(-sn, cs), 0, 0);
+        TriangleBuffer.Append(o);
+
+        o.vertices[0] = o.vertices[1];
+        o.vertices[1] = o.vertices[2];
+        o.vertices[2] = origin + float4(Extent * float2(+sn, cs), 0, 0);
+        TriangleBuffer.Append(o);
+    }
+
+    o.vertices[0] = o.vertices[1];
+    o.vertices[1] = o.vertices[2];
+    o.vertices[2] = origin + float4(0, -Extent.y, 0, 0);
     TriangleBuffer.Append(o);
 }
