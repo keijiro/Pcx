@@ -19,6 +19,7 @@
             #pragma geometry Geometry
             #pragma fragment Fragment
             #pragma multi_compile_fog
+            #pragma multi_compile _ _COMPUTE_BUFFER
 
             #include "Common.cginc"
 
@@ -36,13 +37,30 @@
             };
 
             half4 _Color;
+            float4x4 _Transform;
             half _PointSize;
 
+        #if _COMPUTE_BUFFER
+            StructuredBuffer<float4> _PositionBuffer;
+            StructuredBuffer<uint> _ColorBuffer;
+        #endif
+
+        #if _COMPUTE_BUFFER
+            Varyings Vertex(uint vid : SV_VertexID)
+        #else
             Varyings Vertex(Attributes input)
+        #endif
             {
+        #if _COMPUTE_BUFFER
+                float4 pos = mul(_Transform, float4(_PositionBuffer[vid].xyz, 1));
+                half4 col = UnpackColor32(_ColorBuffer[vid]);
+        #else
+                float4 pos = input.position;
+                half4 col = input.color;
+        #endif
                 Varyings o;
-                o.position = UnityObjectToClipPos(input.position);
-                o.color = input.color * _Color;
+                o.position = UnityObjectToClipPos(pos);
+                o.color = col * _Color;
                 UNITY_TRANSFER_FOG(o, o.position);
                 return o;
             }
