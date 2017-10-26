@@ -42,6 +42,8 @@
 
         #if _COMPUTE_BUFFER
             StructuredBuffer<float4> _PositionBuffer;
+            StructuredBuffer<uint> _ColorBuffer;
+
         #endif
 
         #if _COMPUTE_BUFFER
@@ -49,7 +51,7 @@
             {
                 Varyings o;
                 o.position = UnityObjectToClipPos(_PositionBuffer[vid]);
-                o.color = 1;
+                o.color = UnpackColor32(_ColorBuffer[vid]) * _Color;
         #else
             Varyings Vertex(Attributes input)
             {

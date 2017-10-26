@@ -26,7 +26,7 @@ namespace Pcx
         /// The returned buffer must be released by the caller.
         public ComputeBuffer CreateColorBuffer()
         {
-            var buffer = new ComputeBuffer(pointCount, sizeof(System.Byte) * 4);
+            var buffer = new ComputeBuffer(pointCount, 4);
             buffer.SetData(_colorData);
             return buffer;
         }

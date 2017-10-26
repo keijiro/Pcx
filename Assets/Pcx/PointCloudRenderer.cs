@@ -8,6 +8,7 @@ namespace Pcx
         #region Editable attributes
 
         [SerializeField] PointCloudBuffer _source;
+        [SerializeField] Color _color = Color.white;
 
         #endregion
 
@@ -72,6 +73,7 @@ namespace Pcx
 
             _material.SetPass(0);
             _material.EnableKeyword("_COMPUTE_BUFFER");
+            _material.SetColor("_Color", _color);
             _material.SetBuffer("_PositionBuffer", _positionBuffer);
             _material.SetBuffer("_ColorBuffer", _colorBuffer);
 
