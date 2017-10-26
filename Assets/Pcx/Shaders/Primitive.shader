@@ -31,37 +31,40 @@
             {
                 float4 position : SV_POSITION;
                 half4 color : COLOR;
-            #ifdef _PSIZE_ON
+        #ifdef _PSIZE_ON
                 float psize : PSIZE;
-            #endif
+        #endif
                 UNITY_FOG_COORDS(1)
             };
 
             half4 _Color;
+            float4x4 _Transform;
             half _PointSize;
 
         #if _COMPUTE_BUFFER
             StructuredBuffer<float4> _PositionBuffer;
             StructuredBuffer<uint> _ColorBuffer;
-
         #endif
 
         #if _COMPUTE_BUFFER
             Varyings Vertex(uint vid : SV_VertexID)
-            {
-                Varyings o;
-                o.position = UnityObjectToClipPos(_PositionBuffer[vid]);
-                o.color = UnpackColor32(_ColorBuffer[vid]) * _Color;
         #else
             Varyings Vertex(Attributes input)
-            {
-                Varyings o;
-                o.position = UnityObjectToClipPos(input.position);
-                o.color = input.color * _Color;
         #endif
-            #ifdef _PSIZE_ON
+            {
+        #if _COMPUTE_BUFFER
+                float4 pos = mul(_Transform, float4(_PositionBuffer[vid].xyz, 1));
+                half4 col = UnpackColor32(_ColorBuffer[vid]);
+        #else
+                float4 pos = input.position;
+                half4 col = input.color;
+        #endif
+                Varyings o;
+                o.position = UnityObjectToClipPos(pos);
+                o.color = col * _Color;
+        #ifdef _PSIZE_ON
                 o.psize = _PointSize / o.position.w * _ScreenParams.y;
-            #endif
+        #endif
                 UNITY_TRANSFER_FOG(o, o.position);
                 return o;
             }

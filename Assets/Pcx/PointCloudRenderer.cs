@@ -8,7 +8,8 @@ namespace Pcx
         #region Editable attributes
 
         [SerializeField] PointCloudBuffer _source;
-        [SerializeField] Color _color = Color.white;
+        [SerializeField] Color _pointColor = Color.white;
+        [SerializeField] float _pointSize = 0.05f;
 
         #endregion
 
@@ -28,6 +29,11 @@ namespace Pcx
         #endregion
 
         #region MonoBehaviour methods
+
+        void OnValidate()
+        {
+            _pointSize = Mathf.Max(0, _pointSize);
+        }
 
         void OnDisable()
         {
@@ -65,6 +71,15 @@ namespace Pcx
                 _positionBuffer = _source.CreatePositionBuffer();
                 _colorBuffer = _source.CreateColorBuffer();
             }
+
+            _material.EnableKeyword("_COMPUTE_BUFFER");
+
+            _material.SetColor("_Color", _pointColor);
+            _material.SetFloat("_PointSize", _pointSize);
+            _material.SetMatrix("_Transform", transform.localToWorldMatrix);
+
+            _material.SetBuffer("_PositionBuffer", _positionBuffer);
+            _material.SetBuffer("_ColorBuffer", _colorBuffer);
         }
 
         void OnRenderObject()
@@ -72,11 +87,6 @@ namespace Pcx
             if (_material == null || _positionBuffer == null) return;
 
             _material.SetPass(0);
-            _material.EnableKeyword("_COMPUTE_BUFFER");
-            _material.SetColor("_Color", _color);
-            _material.SetBuffer("_PositionBuffer", _positionBuffer);
-            _material.SetBuffer("_ColorBuffer", _colorBuffer);
-
             Graphics.DrawProcedural(MeshTopology.Points, _source.pointCount, 1);
         }
 
