@@ -15,21 +15,36 @@ namespace Pcx
     {
         #region ScriptedImporter implementation
 
+        public enum ContainerType { Mesh, ComputeBuffer  }
+
+        [SerializeField] ContainerType _containerType;
+
         public override void OnImportAsset(AssetImportContext context)
         {
-            var gameObject = new GameObject();
-            var mesh = ImportPlyPointCloud(context.assetPath);
+            if (_containerType == ContainerType.Mesh)
+            {
+                // Mesh container: Create a prefab with MeshFilter/MeshRenderer.
+                var gameObject = new GameObject();
+                var mesh = ImportAsMesh(context.assetPath);
 
-            var meshFilter = gameObject.AddComponent<MeshFilter>();
-            meshFilter.sharedMesh = mesh;
+                var meshFilter = gameObject.AddComponent<MeshFilter>();
+                meshFilter.sharedMesh = mesh;
 
-            var meshRenderer = gameObject.AddComponent<MeshRenderer>();
-            meshRenderer.sharedMaterial = GetDefaultMaterial();
+                var meshRenderer = gameObject.AddComponent<MeshRenderer>();
+                meshRenderer.sharedMaterial = GetDefaultMaterial();
 
-            context.AddObjectToAsset("prefab", gameObject);
-            if (mesh != null) context.AddObjectToAsset("mesh", mesh);
+                context.AddObjectToAsset("prefab", gameObject);
+                if (mesh != null) context.AddObjectToAsset("mesh", mesh);
 
-            context.SetMainObject(gameObject);
+                context.SetMainObject(gameObject);
+            }
+            else
+            {
+                // ComputeBuffer container: Simply save it as a ScriptableObject.
+                var buffer = ImportAsPointCloudBuffer(context.assetPath);
+                context.AddObjectToAsset("buffer", buffer);
+                context.SetMainObject(buffer);
+            }
         }
 
         #endregion
@@ -45,29 +60,88 @@ namespace Pcx
 
         #endregion
 
-        #region Ply file header definition
+        #region Internal data structure
 
-        class Header
+        enum DataProperty {
+            Invalid,
+            X, Y, Z,
+            R, G, B, A,
+            Data8, Data16, Data32
+        }
+
+        static int GetPropertySize(DataProperty p)
         {
-            public enum Property {
-                Invalid, Data8, Data16, Data32, X, Y, Z, R, G, B
+            switch (p)
+            {
+                case DataProperty.X: return 4;
+                case DataProperty.Y: return 4;
+                case DataProperty.Z: return 4;
+                case DataProperty.R: return 1;
+                case DataProperty.G: return 1;
+                case DataProperty.B: return 1;
+                case DataProperty.A: return 1;
+                case DataProperty.Data8: return 1;
+                case DataProperty.Data16: return 2;
+                case DataProperty.Data32: return 4;
             }
-            public List<Property> properties = new List<Property>();
+            return 0;
+        }
+
+        class DataHeader
+        {
+            public List<DataProperty> properties = new List<DataProperty>();
             public int vertexCount = -1;
+        }
+
+        class DataBody
+        {
+            public List<Vector3> vertices;
+            public List<Color32> colors;
+
+            public DataBody(int vertexCount)
+            {
+                vertices = new List<Vector3>(vertexCount);
+                colors = new List<Color32>(vertexCount);
+            }
+
+            public void AddPoint(
+                float x, float y, float z,
+                byte r, byte g, byte b, byte a
+            )
+            {
+                vertices.Add(new Vector3(x, y, z));
+                colors.Add(new Color32(r, g, b, a));
+            }
         }
 
         #endregion
 
         #region Reader implementation
 
-        Mesh ImportPlyPointCloud(string path)
+        Mesh ImportAsMesh(string path)
         {
             try
             {
-                var name = Path.GetFileNameWithoutExtension(path);
                 var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                var header = ReadHeader(new StreamReader(stream));
-                return ReadPointCloud(header, name, new BinaryReader(stream));
+                var header = ReadDataHeader(new StreamReader(stream));
+                var body = ReadDataBody(header, new BinaryReader(stream));
+
+                var mesh = new Mesh();
+                mesh.name = Path.GetFileNameWithoutExtension(path);
+
+                mesh.indexFormat = header.vertexCount > 65535 ?
+                    IndexFormat.UInt32 : IndexFormat.UInt16;
+
+                mesh.SetVertices(body.vertices);
+                mesh.SetColors(body.colors);
+
+                mesh.SetIndices(
+                    Enumerable.Range(0, header.vertexCount).ToArray(),
+                    MeshTopology.Points, 0
+                );
+
+                mesh.UploadMeshData(true);
+                return mesh;
             }
             catch (Exception e)
             {
@@ -76,42 +150,63 @@ namespace Pcx
             }
         }
 
-        Header ReadHeader(StreamReader reader)
+        PointCloudBuffer ImportAsPointCloudBuffer(string path)
         {
-            var header = new Header();
-            var read = 0;
+            try
+            {
+                var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                var header = ReadDataHeader(new StreamReader(stream));
+                var body = ReadDataBody(header, new BinaryReader(stream));
+                var buffer = ScriptableObject.CreateInstance<PointCloudBuffer>();
+                buffer.Initialize(body.vertices, body.colors);
+                return buffer;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Failed importing " + path + ". " + e.Message);
+                return null;
+            }
+        }
+
+        DataHeader ReadDataHeader(StreamReader reader)
+        {
+            var data = new DataHeader();
+            var readCount = 0;
 
             // Magic number line ("ply")
             var line = reader.ReadLine();
-            read += line.Length + 1;
+            readCount += line.Length + 1;
             if (line != "ply")
-                throw new ArgumentException("Invalid magic number.");
+                throw new ArgumentException("Magic number ('ply') mismatch.");
 
-            // Data format: binary/little endian
+            // Data format: check if it's binary/little endian.
             line = reader.ReadLine();
-            read += line.Length + 1;
+            readCount += line.Length + 1;
             if (line != "format binary_little_endian 1.0")
-                throw new ArgumentException("Invalid data format. Should be binary/little endian.");
+                throw new ArgumentException(
+                    "Invalid data format ('" + line + "'). " +
+                    "Should be binary/little endian.");
 
-            // Read header members.
+            // Read header contents.
             for (var skip = false;;)
             {
                 // Read a line and split it with white space.
                 line = reader.ReadLine();
-                read += line.Length + 1;
+                readCount += line.Length + 1;
                 if (line == "end_header") break;
                 var col = line.Split();
 
-                // Element declaration line
+                // Element declaration (unskippable)
                 if (col[0] == "element")
                 {
                     if (col[1] == "vertex")
                     {
-                        header.vertexCount = Convert.ToInt32(col[2]);
+                        data.vertexCount = Convert.ToInt32(col[2]);
                         skip = false;
                     }
                     else
                     {
+                        // Don't read elements other than vertices.
                         skip = true;
                     }
                 }
@@ -121,88 +216,63 @@ namespace Pcx
                 // Property declaration line
                 if (col[0] == "property")
                 {
-                    var prop = Header.Property.Invalid;
+                    var prop = DataProperty.Invalid;
 
+                    // Parse the property name entry.
                     switch (col[2])
                     {
-                        case "x"    : prop = Header.Property.X; break;
-                        case "y"    : prop = Header.Property.Y; break;
-                        case "z"    : prop = Header.Property.Z; break;
-                        case "red"  : prop = Header.Property.R; break;
-                        case "green": prop = Header.Property.G; break;
-                        case "blue" : prop = Header.Property.B; break;
+                        case "x"    : prop = DataProperty.X; break;
+                        case "y"    : prop = DataProperty.Y; break;
+                        case "z"    : prop = DataProperty.Z; break;
+                        case "red"  : prop = DataProperty.R; break;
+                        case "green": prop = DataProperty.G; break;
+                        case "blue" : prop = DataProperty.B; break;
+                        case "alpha": prop = DataProperty.A; break;
                     }
 
-                    if (col[1] == "uchar")
+                    // Check the property type.
+                    if (col[1] == "char" || col[1] == "uchar")
                     {
-                        if (prop == Header.Property.Invalid)
-                        {
-                            prop = Header.Property.Data8;
-                        }
-                        else if (prop != Header.Property.R &&
-                                 prop != Header.Property.G &&
-                                 prop != Header.Property.B)
-                        {
-                            throw new ArgumentException("Invalid property type.");
-                        }
+                        if (prop == DataProperty.Invalid)
+                            prop = DataProperty.Data8;
+                        else if (GetPropertySize(prop) != 1)
+                            throw new ArgumentException("Invalid property type ('" + line + "').");
                     }
                     else if (col[1] == "short" || col[1] == "ushort")
                     {
-                        if (prop == Header.Property.Invalid)
-                        {
-                            prop = Header.Property.Data16;
-                        }
-                        else
-                        {
-                            throw new ArgumentException("Invalid property type.");
-                        }
+                        if (prop == DataProperty.Invalid)
+                            prop = DataProperty.Data16;
+                        else if (GetPropertySize(prop) != 2)
+                            throw new ArgumentException("Invalid property type ('" + line + "').");
                     }
-                    else if (col[1] == "int" || col[1] == "uint")
+                    else if (col[1] == "int" || col[1] == "uint" || col[1] == "float")
                     {
-                        if (prop == Header.Property.Invalid)
-                        {
-                            prop = Header.Property.Data32;
-                        }
-                        else
-                        {
-                            throw new ArgumentException("Invalid property type.");
-                        }
-                    }
-                    else if (col[1] == "float")
-                    {
-                        if (prop == Header.Property.Invalid)
-                        {
-                            prop = Header.Property.Data32;
-                        }
-                        else if (prop != Header.Property.X &&
-                                 prop != Header.Property.Y &&
-                                 prop != Header.Property.Z)
-                        {
-                            throw new ArgumentException("Invalid property type.");
-                        }
+                        if (prop == DataProperty.Invalid)
+                            prop = DataProperty.Data32;
+                        else if (GetPropertySize(prop) != 4)
+                            throw new ArgumentException("Invalid property type ('" + line + "').");
                     }
                     else
                     {
-                        throw new ArgumentException("Unsupported property type.");
+                        throw new ArgumentException("Unsupported property type ('" + line + "').");
                     }
 
-                    header.properties.Add(prop);
+                    data.properties.Add(prop);
                 }
             }
 
             // Rewind the stream back to the exact position of the reader.
-            reader.BaseStream.Position = read;
+            reader.BaseStream.Position = readCount;
 
-            return header;
+            return data;
         }
 
-        Mesh ReadPointCloud(Header header, string name, BinaryReader reader)
+        DataBody ReadDataBody(DataHeader header, BinaryReader reader)
         {
-            var vertices = new List<Vector3>(header.vertexCount);
-            var colors = new List<Color32>(header.vertexCount);
+            var data = new DataBody(header.vertexCount);
 
             float x = 0, y = 0, z = 0;
-            Byte r = 0, g = 0, b = 0;
+            Byte r = 255, g = 255, b = 255, a = 255;
 
             for (var i = 0; i < header.vertexCount; i++)
             {
@@ -210,43 +280,25 @@ namespace Pcx
                 {
                     switch (prop)
                     {
-                        case Header.Property.X: x = reader.ReadSingle(); break;
-                        case Header.Property.Y: y = reader.ReadSingle(); break;
-                        case Header.Property.Z: z = reader.ReadSingle(); break;
+                        case DataProperty.X: x = reader.ReadSingle(); break;
+                        case DataProperty.Y: y = reader.ReadSingle(); break;
+                        case DataProperty.Z: z = reader.ReadSingle(); break;
 
-                        case Header.Property.R: r = reader.ReadByte(); break;
-                        case Header.Property.G: g = reader.ReadByte(); break;
-                        case Header.Property.B: b = reader.ReadByte(); break;
+                        case DataProperty.R: r = reader.ReadByte(); break;
+                        case DataProperty.G: g = reader.ReadByte(); break;
+                        case DataProperty.B: b = reader.ReadByte(); break;
+                        case DataProperty.A: a = reader.ReadByte(); break;
 
-                        case Header.Property.Data8:
-                            reader.ReadByte(); break;
-
-                        case Header.Property.Data16:
-                            reader.BaseStream.Position += 2; break;
-
-                        case Header.Property.Data32:
-                            reader.BaseStream.Position += 4; break;
+                        case DataProperty.Data8: reader.ReadByte(); break;
+                        case DataProperty.Data16: reader.BaseStream.Position += 2; break;
+                        case DataProperty.Data32: reader.BaseStream.Position += 4; break;
                     }
                 }
 
-                vertices.Add(new Vector3(x, y, z));
-                colors.Add(new Color32(r, g, b, 255));
+                data.AddPoint(x, y, z, r, g, b, a);
             }
 
-            var mesh = new Mesh();
-            mesh.name = name;
-            mesh.indexFormat = IndexFormat.UInt32;
-
-            mesh.SetVertices(vertices);
-            mesh.SetColors(colors);
-
-            mesh.SetIndices(
-                Enumerable.Range(0, header.vertexCount).ToArray(),
-                MeshTopology.Points, 0
-            );
-
-            mesh.UploadMeshData(true);
-            return mesh;
+            return data;
         }
     }
 

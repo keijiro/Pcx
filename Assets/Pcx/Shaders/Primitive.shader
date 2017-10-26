@@ -17,6 +17,7 @@
             #pragma fragment Fragment
             #pragma multi_compile_fog
             #pragma multi_compile _ _PSIZE_ON
+            #pragma multi_compile _ _COMPUTE_BUFFER
 
             #include "Common.cginc"
 
@@ -39,11 +40,23 @@
             half4 _Color;
             half _PointSize;
 
+        #if _COMPUTE_BUFFER
+            StructuredBuffer<float4> _PositionBuffer;
+        #endif
+
+        #if _COMPUTE_BUFFER
+            Varyings Vertex(uint vid : SV_VertexID)
+            {
+                Varyings o;
+                o.position = UnityObjectToClipPos(_PositionBuffer[vid]);
+                o.color = 1;
+        #else
             Varyings Vertex(Attributes input)
             {
                 Varyings o;
                 o.position = UnityObjectToClipPos(input.position);
                 o.color = input.color * _Color;
+        #endif
             #ifdef _PSIZE_ON
                 o.psize = _PointSize / o.position.w * _ScreenParams.y;
             #endif
