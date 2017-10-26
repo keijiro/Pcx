@@ -8,10 +8,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Plypc
+namespace Pcx
 {
     [ScriptedImporter(1, "ply")]
-    class PlypcImporter : ScriptedImporter
+    class PlyImporter : ScriptedImporter
     {
         #region ScriptedImporter implementation
 

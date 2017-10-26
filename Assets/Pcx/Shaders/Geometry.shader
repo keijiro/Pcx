@@ -1,4 +1,4 @@
-﻿Shader "Point Cloud/Geometry Shader"
+﻿Shader "PCX/Geometry Shader"
 {
     Properties
     {
@@ -56,7 +56,7 @@
                 // Copy the basic information.
                 Varyings o;
                 o.color = input[0].color;
-                COPY_FOG(o, input[0]);
+                PCX_COPY_FOG(o, input[0]);
 
                 // Determine the number of slices based on the radius of the
                 // point on the screen.

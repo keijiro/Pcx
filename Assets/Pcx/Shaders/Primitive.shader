@@ -1,4 +1,4 @@
-﻿Shader "Point Cloud/Point Primitive"
+﻿Shader "PCX/Point Primitive"
 {
     Properties
     {
