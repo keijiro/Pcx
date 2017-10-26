@@ -17,6 +17,7 @@ namespace Pcx
 
         [SerializeField, HideInInspector] Shader _pointShader;
         [SerializeField, HideInInspector] Shader _discShader;
+        [SerializeField, HideInInspector] ComputeShader _converter;
 
         #endregion
 
@@ -27,6 +28,7 @@ namespace Pcx
 
         ComputeBuffer _positionBuffer;
         ComputeBuffer _colorBuffer;
+        ComputeBuffer _triangleBuffer;
 
         #endregion
 
@@ -44,7 +46,11 @@ namespace Pcx
             {
                 _positionBuffer.Release();
                 _colorBuffer.Release();
-                _positionBuffer = _colorBuffer = null;
+                _triangleBuffer.Release();
+
+                _positionBuffer = null;
+                _colorBuffer = null;
+                _triangleBuffer = null;
             }
         }
 
@@ -76,28 +82,18 @@ namespace Pcx
 
                 _discMaterial = new Material(_discShader);
                 _discMaterial.hideFlags = HideFlags.DontSave;
-                _discMaterial.EnableKeyword("_COMPUTE_BUFFER");
             }
 
             if (_positionBuffer == null && _source != null)
             {
                 _positionBuffer = _source.CreatePositionBuffer();
                 _colorBuffer = _source.CreateColorBuffer();
+
+                _triangleBuffer = new ComputeBuffer(
+                    _source.pointCount, sizeof(float) * 4 * 4,
+                    ComputeBufferType.Append
+                );
             }
-
-            _pointMaterial.SetColor("_Color", _pointColor);
-            _discMaterial.SetColor("_Color", _pointColor);
-
-            _pointMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
-            _discMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
-
-            _discMaterial.SetFloat("_PointSize", _pointSize);
-
-            _pointMaterial.SetBuffer("_PositionBuffer", _positionBuffer);
-            _discMaterial.SetBuffer("_PositionBuffer", _positionBuffer);
-
-            _pointMaterial.SetBuffer("_ColorBuffer", _colorBuffer);
-            _discMaterial.SetBuffer("_ColorBuffer", _colorBuffer);
         }
 
         void OnRenderObject()
@@ -105,12 +101,32 @@ namespace Pcx
             if (_pointMaterial == null || _positionBuffer == null) return;
 
             if (_pointSize == 0)
+            {
                 _pointMaterial.SetPass(0);
+                _pointMaterial.SetColor("_Color", _pointColor);
+                _pointMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
+                _pointMaterial.SetBuffer("_PositionBuffer", _positionBuffer);
+                _pointMaterial.SetBuffer("_ColorBuffer", _colorBuffer);
+                Graphics.DrawProcedural(MeshTopology.Points, _source.pointCount, 1);
+            }
             else
+            {
+                var pm = GL.GetGPUProjectionMatrix(Camera.current.projectionMatrix, false);
+                var vm = Camera.current.worldToCameraMatrix;
+                var kernel = _converter.FindKernel("Main");
+
+                _converter.SetVector("Tint", _pointColor);
+                _converter.SetMatrix("Transform", pm * vm * transform.localToWorldMatrix);
+                _converter.SetBuffer(kernel, "PositionBuffer", _positionBuffer);
+                _converter.SetBuffer(kernel, "ColorBuffer", _colorBuffer);
+                _converter.SetBuffer(kernel, "TriangleBuffer", _triangleBuffer);
+                _triangleBuffer.SetCounterValue(0);
+                _converter.Dispatch(kernel, _source.pointCount / 128, 1, 1);
+
                 _discMaterial.SetPass(0);
-
-            Graphics.DrawProcedural(MeshTopology.Points, _source.pointCount, 1);
-
+                _discMaterial.SetBuffer("_TriangleBuffer", _triangleBuffer);
+                Graphics.DrawProcedural(MeshTopology.Triangles, 3 * _source.pointCount);
+            }
         }
 
         #endregion

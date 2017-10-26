@@ -1,0 +1,37 @@
+#pragma kernel Main
+
+#include "Common.cginc"
+
+struct Triangle
+{
+    float4 vertices[3];
+    float4 color;
+};
+
+StructuredBuffer<float4> PositionBuffer;
+StructuredBuffer<uint> ColorBuffer;
+
+AppendStructuredBuffer<Triangle> TriangleBuffer;
+
+CBUFFER_START(Params)
+    float4 Tint;
+    float4x4 Transform;
+CBUFFER_END
+
+[numthreads(128, 1, 1)]
+void Main(uint id : SV_DispatchThreadID)
+{
+    float4 pos = float4(PositionBuffer[id].xyz, 1);
+    float4 col = UnpackColor32(ColorBuffer[id]);
+
+     //mul(UNITY_MATRIX_VP, mul(unity_ObjectToWorld, float4(pos, 1.0)));
+
+     pos = mul(Transform, pos);
+
+    Triangle o;
+    o.vertices[0] = pos;
+    o.vertices[1] = pos + float4(0.1, 0, 0, 0);
+    o.vertices[2] = pos + float4(0, 0.1, 0, 0);
+    o.color = col * Tint;
+    TriangleBuffer.Append(o);
+}
