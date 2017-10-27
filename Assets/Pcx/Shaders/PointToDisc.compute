@@ -4,7 +4,8 @@
 
 struct Triangle
 {
-    float4 vertices[3];
+    float2 p[3];
+    float2 zw;
     float4 color;
 };
 
@@ -41,9 +42,10 @@ void Main(uint id : SV_DispatchThreadID)
     float sn, cs;
     sincos(UNITY_PI / slices, sn, cs);
 
-    o.vertices[0] = origin + float4(0, extent.y, 0, 0);
-    o.vertices[1] = origin + float4(extent * float2(-sn, cs), 0, 0);
-    o.vertices[2] = origin + float4(extent * float2(+sn, cs), 0, 0);
+    o.zw = origin.zw;
+    o.p[0] = origin.xy + float2(0, extent.y);
+    o.p[1] = origin.xy + float2(extent * float2(-sn, cs));
+    o.p[2] = origin.xy + float2(extent * float2(+sn, cs));
     TriangleBuffer.Append(o);
 
     UNITY_LOOP for (uint i = 2; i < slices; i++)
@@ -51,19 +53,19 @@ void Main(uint id : SV_DispatchThreadID)
         float sn, cs;
         sincos(UNITY_PI / slices * i, sn, cs);
 
-        o.vertices[0] = o.vertices[1];
-        o.vertices[1] = o.vertices[2];
-        o.vertices[2] = origin + float4(extent * float2(-sn, cs), 0, 0);
+        o.p[0] = o.p[1];
+        o.p[1] = o.p[2];
+        o.p[2] = origin.xy + float2(extent * float2(-sn, cs));
         TriangleBuffer.Append(o);
 
-        o.vertices[0] = o.vertices[1];
-        o.vertices[1] = o.vertices[2];
-        o.vertices[2] = origin + float4(extent * float2(+sn, cs), 0, 0);
+        o.p[0] = o.p[1];
+        o.p[1] = o.p[2];
+        o.p[2] = origin.xy + float2(extent * float2(+sn, cs));
         TriangleBuffer.Append(o);
     }
 
-    o.vertices[0] = o.vertices[1];
-    o.vertices[1] = o.vertices[2];
-    o.vertices[2] = origin + float4(0, -extent.y, 0, 0);
+    o.p[0] = o.p[1];
+    o.p[1] = o.p[2];
+    o.p[2] = origin.xy + float2(0, -extent.y);
     TriangleBuffer.Append(o);
 }

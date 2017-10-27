@@ -18,7 +18,8 @@
 
             struct Triangle
             {
-                float4 vertices[3];
+                float2 p[3];
+                float2 zw;
                 float4 color;
             };
 
@@ -33,9 +34,10 @@
 
             Varyings Vertex(uint vid : SV_VertexID, uint iid : SV_InstanceID)
             {
+                Triangle t = _TriangleBuffer[iid];
                 Varyings o;
-                o.position = _TriangleBuffer[iid].vertices[vid];
-                o.color = _TriangleBuffer[iid].color;
+                o.position = float4(t.p[vid], t.zw);
+                o.color = t.color;
                 UNITY_TRANSFER_FOG(o, o.position);
                 return o;
             }
