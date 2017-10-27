@@ -1,0 +1,30 @@
+#pragma kernel Main
+
+#include "Common.cginc"
+
+StructuredBuffer<float4> PointBuffer;
+AppendStructuredBuffer<float4> DrawBuffer1;
+AppendStructuredBuffer<float4> DrawBuffer2;
+AppendStructuredBuffer<float4> DrawBuffer3;
+
+CBUFFER_START(Params)
+    float ScreenHeight;
+    float2 Extent;
+    float4x4 Transform;
+CBUFFER_END
+
+[numthreads(128, 1, 1)]
+void Main(uint id : SV_DispatchThreadID)
+{
+    float4 pt = PointBuffer[id];
+
+    float4 origin = mul(Transform, float4(pt.xyz, 1));
+    float radius = Extent.y / origin.w * ScreenHeight;
+
+    if (radius < 1.2)
+        DrawBuffer1.Append(pt);
+    else if (radius < 10)
+        DrawBuffer2.Append(pt);
+    else
+        DrawBuffer3.Append(pt);
+}
