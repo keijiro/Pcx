@@ -9,8 +9,7 @@ struct Triangle
     float4 color;
 };
 
-StructuredBuffer<float4> PositionBuffer;
-StructuredBuffer<uint> ColorBuffer;
+StructuredBuffer<float4> PointBuffer;
 
 AppendStructuredBuffer<Triangle> TriangleBuffer;
 
@@ -24,8 +23,9 @@ CBUFFER_END
 [numthreads(128, 1, 1)]
 void Main(uint id : SV_DispatchThreadID)
 {
-    float4 origin = mul(Transform, float4(PositionBuffer[id].xyz, 1));
-    float4 color = UnpackColor32(ColorBuffer[id]) * Tint;
+    float4 pt = PointBuffer[id];
+    float4 origin = mul(Transform, float4(pt.xyz, 1));
+    float4 color = UnpackColor32(asuint(pt.w)) * Tint;
 
     Triangle o;
     o.color = color;

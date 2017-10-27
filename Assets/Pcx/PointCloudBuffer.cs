@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Pcx
 {
@@ -10,24 +9,15 @@ namespace Pcx
 
         /// Number of points.
         public int pointCount {
-            get { return _positionData.Length; }
+            get { return _pointData.Length; }
         }
 
-        /// Create a compute buffer for the position data.
+        /// Create a compute buffer.
         /// The returned buffer must be released by the caller.
-        public ComputeBuffer CreatePositionBuffer()
+        public ComputeBuffer CreateComputeBuffer()
         {
             var buffer = new ComputeBuffer(pointCount, sizeof(float) * 4);
-            buffer.SetData(_positionData);
-            return buffer;
-        }
-
-        /// Create a compute buffer for the color data.
-        /// The returned buffer must be released by the caller.
-        public ComputeBuffer CreateColorBuffer()
-        {
-            var buffer = new ComputeBuffer(pointCount, 4);
-            buffer.SetData(_colorData);
+            buffer.SetData(_pointData);
             return buffer;
         }
 
@@ -35,8 +25,14 @@ namespace Pcx
 
         #region Serialized data members
 
-        [SerializeField] Vector4[] _positionData;
-        [SerializeField] Color32[] _colorData;
+        [System.Serializable]
+        struct Point
+        {
+            public Vector3 position;
+            public Color32 color;
+        }
+
+        [SerializeField] Point[] _pointData;
 
         #endregion
 
@@ -46,8 +42,18 @@ namespace Pcx
 
         public void Initialize(List<Vector3> positions, List<Color32> colors)
         {
-            _positionData = positions.Select(x => (Vector4)x).ToArray();
-            _colorData = colors.ToArray();
+            _pointData = new Point[positions.Count];
+
+            for (var i = 0; i < _pointData.Length; i++)
+            {
+                var p = positions[i];
+                var c = colors[i];
+
+                _pointData[i] = new Point {
+                    position = positions[i],
+                    color = colors[i]
+                };
+            }
         }
 
         #endif

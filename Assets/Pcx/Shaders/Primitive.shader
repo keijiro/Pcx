@@ -42,8 +42,7 @@
             half _PointSize;
 
         #if _COMPUTE_BUFFER
-            StructuredBuffer<float4> _PositionBuffer;
-            StructuredBuffer<uint> _ColorBuffer;
+            StructuredBuffer<float4> _PointBuffer;
         #endif
 
         #if _COMPUTE_BUFFER
@@ -53,8 +52,9 @@
         #endif
             {
         #if _COMPUTE_BUFFER
-                float4 pos = mul(_Transform, float4(_PositionBuffer[vid].xyz, 1));
-                half4 col = UnpackColor32(_ColorBuffer[vid]);
+                float4 pt = _PointBuffer[vid];
+                float4 pos = mul(_Transform, float4(pt.xyz, 1));
+                half4 col = UnpackColor32(asuint(pt.w));
         #else
                 float4 pos = input.position;
                 half4 col = input.color;
