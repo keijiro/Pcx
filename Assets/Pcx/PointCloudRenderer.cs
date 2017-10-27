@@ -93,15 +93,15 @@ namespace Pcx
                 _colorBuffer = _source.CreateColorBuffer();
 
                 _triangleBuffer = new ComputeBuffer(
-                    _source.pointCount * 16, sizeof(float) * 4 * 4,
+                    _source.pointCount * 3 * 20, sizeof(float) * 4 * 4,
                     ComputeBufferType.Append
                 );
 
                 _drawArgsBuffer = new ComputeBuffer(
-                    1, 5 * sizeof(uint),
+                    1, 4 * sizeof(uint),
                     ComputeBufferType.IndirectArguments
                 );
-                _drawArgsBuffer.SetData(new uint[] { 3000000, 1, 0, 0, 0 });
+                _drawArgsBuffer.SetData(new uint[] { 3, 0, 0, 0 });
             }
         }
 
@@ -123,8 +123,9 @@ namespace Pcx
                 var proj = GL.GetGPUProjectionMatrix(Camera.current.projectionMatrix, true);
                 var view = Camera.current.worldToCameraMatrix;
 
+                _converter.SetFloat("ScreenHeight", Camera.current.pixelHeight);
                 _converter.SetVector("Tint", _pointColor);
-                _converter.SetVector("Extent", new Vector2(proj[0, 0], proj[1, 1]) * _pointSize);
+                _converter.SetVector("Extent", new Vector2(Mathf.Abs(proj[0, 0]), Mathf.Abs(proj[1, 1])) * _pointSize);
                 _converter.SetMatrix("Transform", proj * view * transform.localToWorldMatrix);
 
                 var kernel = _converter.FindKernel("Main");
@@ -135,7 +136,7 @@ namespace Pcx
                 _triangleBuffer.SetCounterValue(0);
                 _converter.Dispatch(kernel, _source.pointCount / 128, 1, 1);
 
-                //ComputeBuffer.CopyCount(_triangleBuffer, _drawArgsBuffer, 4);
+                ComputeBuffer.CopyCount(_triangleBuffer, _drawArgsBuffer, 4);
 
                 _discMaterial.SetPass(0);
                 _discMaterial.SetBuffer("_TriangleBuffer", _triangleBuffer);

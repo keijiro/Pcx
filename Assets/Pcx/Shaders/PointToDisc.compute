@@ -14,6 +14,7 @@ StructuredBuffer<uint> ColorBuffer;
 AppendStructuredBuffer<Triangle> TriangleBuffer;
 
 CBUFFER_START(Params)
+    float ScreenHeight;
     float4 Tint;
     float2 Extent;
     float4x4 Transform;
@@ -28,14 +29,21 @@ void Main(uint id : SV_DispatchThreadID)
     Triangle o;
     o.color = color;
 
-    uint slices = 4;
+    // Determine the number of slices based on the radius of the
+    // point on the screen.
+    float radius = Extent.y / origin.w * ScreenHeight;
+    uint slices = min((radius + 1) / 5, 4) + 2;
+
+    // Slightly enlarge quad points to compensate area reduction.
+    // Hopefully this line would be complied without branch.
+    float2 extent = Extent * (slices == 2 ? 1.2 : 1.0);
 
     float sn, cs;
     sincos(UNITY_PI / slices, sn, cs);
 
-    o.vertices[0] = origin + float4(0, Extent.y, 0, 0);
-    o.vertices[1] = origin + float4(Extent * float2(-sn, cs), 0, 0);
-    o.vertices[2] = origin + float4(Extent * float2(+sn, cs), 0, 0);
+    o.vertices[0] = origin + float4(0, extent.y, 0, 0);
+    o.vertices[1] = origin + float4(extent * float2(-sn, cs), 0, 0);
+    o.vertices[2] = origin + float4(extent * float2(+sn, cs), 0, 0);
     TriangleBuffer.Append(o);
 
     UNITY_LOOP for (uint i = 2; i < slices; i++)
@@ -45,17 +53,17 @@ void Main(uint id : SV_DispatchThreadID)
 
         o.vertices[0] = o.vertices[1];
         o.vertices[1] = o.vertices[2];
-        o.vertices[2] = origin + float4(Extent * float2(-sn, cs), 0, 0);
+        o.vertices[2] = origin + float4(extent * float2(-sn, cs), 0, 0);
         TriangleBuffer.Append(o);
 
         o.vertices[0] = o.vertices[1];
         o.vertices[1] = o.vertices[2];
-        o.vertices[2] = origin + float4(Extent * float2(+sn, cs), 0, 0);
+        o.vertices[2] = origin + float4(extent * float2(+sn, cs), 0, 0);
         TriangleBuffer.Append(o);
     }
 
     o.vertices[0] = o.vertices[1];
     o.vertices[1] = o.vertices[2];
-    o.vertices[2] = origin + float4(0, -Extent.y, 0, 0);
+    o.vertices[2] = origin + float4(0, -extent.y, 0, 0);
     TriangleBuffer.Append(o);
 }

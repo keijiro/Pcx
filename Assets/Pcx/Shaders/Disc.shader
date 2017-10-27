@@ -31,12 +31,11 @@
 
             StructuredBuffer<Triangle> _TriangleBuffer;
 
-            Varyings Vertex(uint vid : SV_VertexID)
+            Varyings Vertex(uint vid : SV_VertexID, uint iid : SV_InstanceID)
             {
-                Triangle t = _TriangleBuffer[vid / 3];
                 Varyings o;
-                o.position = t.vertices[vid % 3];
-                o.color = t.color;
+                o.position = _TriangleBuffer[iid].vertices[vid];
+                o.color = _TriangleBuffer[iid].color;
                 UNITY_TRANSFER_FOG(o, o.position);
                 return o;
             }
