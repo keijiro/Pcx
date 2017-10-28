@@ -87,6 +87,10 @@ namespace Pcx
         {
             if (_source == null) return;
 
+            var camera = Camera.current;
+            if ((camera.cullingMask & (1 << gameObject.layer)) == 0) return;
+            if (camera.name == "Preview Scene Camera") return;
+
             // TODO: Do view frustum culling here.
 
             // Lazy initialization

@@ -92,4 +92,5 @@ Shader "Point Cloud/Point"
             ENDCG
         }
     }
+    CustomEditor "Pcx.PointMaterialInspector"
 }

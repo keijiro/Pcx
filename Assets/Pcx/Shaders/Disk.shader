@@ -133,4 +133,5 @@ Shader "Point Cloud/Disk"
             ENDCG
         }
     }
+    CustomEditor "Pcx.DiskMaterialInspector"
 }

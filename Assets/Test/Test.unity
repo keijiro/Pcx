@@ -15,9 +15,9 @@ RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 8
   m_Fog: 0
-  m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  m_FogColor: {r: 0, g: 0, b: 0, a: 1}
   m_FogMode: 3
-  m_FogDensity: 0.01
+  m_FogDensity: 0.09
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
   m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
@@ -297,7 +297,7 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 100000, guid: be90f5ea5e6475b4a94c4861bd00c32c, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: be90f5ea5e6475b4a94c4861bd00c32c, type: 3}
@@ -355,7 +355,44 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 100000, guid: a2b65c28dd57e524685b73b27ea5f74b, type: 3}
       propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: a2b65c28dd57e524685b73b27ea5f74b, type: 3}
+      propertyPath: _pointColor.r
+      value: 2.779
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: a2b65c28dd57e524685b73b27ea5f74b, type: 3}
+      propertyPath: _pointColor.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: a2b65c28dd57e524685b73b27ea5f74b, type: 3}
+      propertyPath: _pointColor.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: a2b65c28dd57e524685b73b27ea5f74b, type: 3}
+      propertyPath: _pointTint.r
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: a2b65c28dd57e524685b73b27ea5f74b, type: 3}
+      propertyPath: _pointTint.g
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: a2b65c28dd57e524685b73b27ea5f74b, type: 3}
+      propertyPath: _pointTint.b
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: a2b65c28dd57e524685b73b27ea5f74b, type: 3}
+      propertyPath: _pointTint.a
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 11400000, guid: a2b65c28dd57e524685b73b27ea5f74b, type: 3}
+      propertyPath: _source
+      value: 
+      objectReference: {fileID: 11400002, guid: a2b65c28dd57e524685b73b27ea5f74b,
+        type: 3}
+    - target: {fileID: 100000, guid: a2b65c28dd57e524685b73b27ea5f74b, type: 3}
+      propertyPath: m_Layer
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_ParentPrefab: {fileID: 100100000, guid: a2b65c28dd57e524685b73b27ea5f74b, type: 3}
