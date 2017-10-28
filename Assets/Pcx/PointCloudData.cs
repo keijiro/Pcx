@@ -33,7 +33,7 @@ namespace Pcx
         struct Point
         {
             public Vector3 position;
-            public Color32 color;
+            public uint color;
         }
 
         [SerializeField] Point[] _pointData;
@@ -44,18 +44,30 @@ namespace Pcx
 
         #if UNITY_EDITOR
 
+        static uint EncodeColor(Color c)
+        {
+            const float kMaxBrightness = 16;
+
+            var y = Mathf.Max(Mathf.Max(c.r, c.g), c.b);
+            y = Mathf.Clamp(Mathf.Ceil(y * 255 / kMaxBrightness), 1, 255);
+
+            var rgb = new Vector3(c.r, c.g, c.b);
+            rgb *= 255 * 255 / (y * kMaxBrightness);
+
+            return ((uint)rgb.x      ) |
+                   ((uint)rgb.y <<  8) |
+                   ((uint)rgb.z << 16) |
+                   ((uint)y     << 24);
+        }
+
         public void Initialize(List<Vector3> positions, List<Color32> colors)
         {
             _pointData = new Point[positions.Count];
-
             for (var i = 0; i < _pointData.Length; i++)
             {
-                var p = positions[i];
-                var c = colors[i];
-
                 _pointData[i] = new Point {
                     position = positions[i],
-                    color = colors[i]
+                    color = EncodeColor(colors[i])
                 };
             }
         }

@@ -5,15 +5,13 @@ Shader "Point Cloud/Disk"
 {
     Properties
     {
-        [HDR] _Color("Tint", Color) = (1, 1, 1, 1)
+        _Color("Tint", Color) = (0.5, 0.5, 0.5, 1)
         _PointSize("Point Size", Float) = 0.05
     }
     SubShader
     {
         Tags { "RenderType"="Opaque" }
-
         Cull Off
-
         Pass
         {
             CGPROGRAM
@@ -21,7 +19,9 @@ Shader "Point Cloud/Disk"
             #pragma vertex Vertex
             #pragma geometry Geometry
             #pragma fragment Fragment
+
             #pragma multi_compile_fog
+            #pragma multi_compile _ UNITY_COLORSPACE_GAMMA
             #pragma multi_compile _ _COMPUTE_BUFFER
 
             #include "Common.cginc"
@@ -29,14 +29,14 @@ Shader "Point Cloud/Disk"
             struct Attributes
             {
                 float4 position : POSITION;
-                half4 color : COLOR;
+                half3 color : COLOR;
             };
 
             struct Varyings
             {
                 float4 position : SV_POSITION;
-                half4 color : COLOR;
-                UNITY_FOG_COORDS(1)
+                half3 color : COLOR;
+                UNITY_FOG_COORDS(0)
             };
 
             half4 _Color;
@@ -53,17 +53,25 @@ Shader "Point Cloud/Disk"
             Varyings Vertex(Attributes input)
         #endif
             {
-        #if _COMPUTE_BUFFER
+            #if _COMPUTE_BUFFER
                 float4 pt = _PointBuffer[vid];
                 float4 pos = mul(_Transform, float4(pt.xyz, 1));
-                half4 col = UnpackColor32(asuint(pt.w));
-        #else
+                half3 col = PcxDecodeColor(asuint(pt.w));
+            #else
                 float4 pos = input.position;
-                half4 col = input.color;
-        #endif
+                half3 col = input.color;
+            #endif
+
+            #ifdef UNITY_COLORSPACE_GAMMA
+                col *= _Color.rgb * 2;
+            #else
+                col *= LinearToGammaSpace(_Color.rgb) * 2;
+                col = GammaToLinearSpace(col);
+            #endif
+
                 Varyings o;
                 o.position = UnityObjectToClipPos(pos);
-                o.color = col * _Color;
+                o.color = col;
                 UNITY_TRANSFER_FOG(o, o.position);
                 return o;
             }
@@ -117,7 +125,7 @@ Shader "Point Cloud/Disk"
 
             half4 Fragment(Varyings input) : SV_Target
             {
-                half4 c = input.color;
+                half4 c = half4(input.color, _Color.a);
                 UNITY_APPLY_FOG(input.fogCoord, c);
                 return c;
             }
