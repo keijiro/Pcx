@@ -78,3 +78,25 @@ Points are rendered as small disks when using the `Point Cloud/Disk` shader or
 ![Disks](https://i.imgur.com/fcq5E3m.png)
 
 This method requires geometry shader support.
+
+Acknowledgements
+----------------
+
+The point cloud files used in the examples (screenshots in this document) are
+created by [Thomas Flynn]. These files are licensed under the Creative Commons
+Attribution license ([CC BY 4.0]). Please see the following original pages for
+further details.
+
+- [richmond-azaelias.ply - Azaleas, Isabella Plantation, Richmond Park]
+  (https://sketchfab.com/models/188576acfe89480f90c38d9df9a4b19a)
+
+- [anthidium-forcipatum.ply - Anthidium forcipatum ♀ (Point Cloud)]
+  (https://sketchfab.com/models/3493da15a8db4f34929fc38d9d0fcb2c)
+
+[Thomas Flynn]: https://sketchfab.com/nebulousflynn
+[CC BY 4.0]: https://creativecommons.org/licenses/by/4.0/
+
+License
+-------
+
+[MIT](LICENSE.txt)
