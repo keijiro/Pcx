@@ -1,9 +1,15 @@
+// Pcx - Point cloud importer & renderer for Unity
+// https://github.com/keijiro/Pcx
+
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Experimental.AssetImporters;
 
 namespace Pcx
 {
+    // Note: Not sure why but EnumPopup doesn't work in ScriptedImporterEditor,
+    // so it has been replaced with a normal Popup control.
+
     [CustomEditor(typeof(PlyImporter))]
     class PlyImporterInspector : ScriptedImporterEditor
     {

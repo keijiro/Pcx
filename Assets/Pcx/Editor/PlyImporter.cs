@@ -1,3 +1,6 @@
+// Pcx - Point cloud importer & renderer for Unity
+// https://github.com/keijiro/Pcx
+
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEditor;
@@ -23,7 +26,8 @@ namespace Pcx
         {
             if (_containerType == ContainerType.Mesh)
             {
-                // Mesh container: Create a prefab with MeshFilter/MeshRenderer.
+                // Mesh container
+                // Create a prefab with MeshFilter/MeshRenderer.
                 var gameObject = new GameObject();
                 var mesh = ImportAsMesh(context.assetPath);
 
@@ -40,10 +44,18 @@ namespace Pcx
             }
             else
             {
-                // ComputeBuffer container: Simply save it as a ScriptableObject.
-                var buffer = ImportAsPointCloudBuffer(context.assetPath);
-                context.AddObjectToAsset("buffer", buffer);
-                context.SetMainObject(buffer);
+                // ComputeBuffer container
+                // Create a prefab with PointCloudRenderer.
+                var gameObject = new GameObject();
+                var data = ImportAsPointCloudData(context.assetPath);
+
+                var renderer = gameObject.AddComponent<PointCloudRenderer>();
+                renderer.source = data;
+
+                context.AddObjectToAsset("prefab", gameObject);
+                if (data != null) context.AddObjectToAsset("data", data);
+
+                context.SetMainObject(gameObject);
             }
         }
 
@@ -150,16 +162,17 @@ namespace Pcx
             }
         }
 
-        PointCloudBuffer ImportAsPointCloudBuffer(string path)
+        PointCloudData ImportAsPointCloudData(string path)
         {
             try
             {
                 var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
                 var header = ReadDataHeader(new StreamReader(stream));
                 var body = ReadDataBody(header, new BinaryReader(stream));
-                var buffer = ScriptableObject.CreateInstance<PointCloudBuffer>();
-                buffer.Initialize(body.vertices, body.colors);
-                return buffer;
+                var data = ScriptableObject.CreateInstance<PointCloudData>();
+                data.Initialize(body.vertices, body.colors);
+                data.name = Path.GetFileNameWithoutExtension(path);
+                return data;
             }
             catch (Exception e)
             {

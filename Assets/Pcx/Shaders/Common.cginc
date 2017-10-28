@@ -1,3 +1,6 @@
+// Pcx - Point cloud importer & renderer for Unity
+// https://github.com/keijiro/Pcx
+
 #include "UnityCG.cginc"
 
 #if defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2)

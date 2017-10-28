@@ -1,15 +1,37 @@
+// Pcx - Point cloud importer & renderer for Unity
+// https://github.com/keijiro/Pcx
+
 using UnityEngine;
 
 namespace Pcx
 {
+    /// A renderer class that renders a point cloud contained by PointCloudData.
     [ExecuteInEditMode]
-    public class PointCloudRenderer : MonoBehaviour
+    public sealed class PointCloudRenderer : MonoBehaviour
     {
         #region Editable attributes
 
-        [SerializeField] PointCloudBuffer _source;
-        [SerializeField] Color _pointColor = Color.white;
+        [SerializeField] PointCloudData _source;
+
+        public PointCloudData source {
+            get { return _source; }
+            set { _source = value; }
+        }
+
+        [SerializeField, ColorUsage(false, true, 0, 8, 0.125f, 3)]
+        Color _pointColor = Color.white;
+
+        public Color pointColor {
+            get { return _pointColor; }
+            set { _pointColor = value; }
+        }
+
         [SerializeField] float _pointSize = 0.05f;
+
+        public float pointSize {
+            get { return _pointSize; }
+            set { _pointSize = value; }
+        }
 
         #endregion
 
@@ -20,7 +42,7 @@ namespace Pcx
 
         #endregion
 
-        #region Private variables
+        #region Private objects
 
         ComputeBuffer _pointBuffer;
         Material _pointMaterial;
@@ -28,7 +50,7 @@ namespace Pcx
 
         #endregion
 
-        #region MonoBehaviour methods
+        #region MonoBehaviour implementation
 
         void OnValidate()
         {
@@ -66,8 +88,10 @@ namespace Pcx
         {
             if (_source == null) return;
 
+            // TODO: Do view frustum culling here.
+
             // Lazy initialization
-            if (_pointBuffer == null && _source != null)
+            if (_pointBuffer == null)
                 _pointBuffer = _source.CreateComputeBuffer();
 
             if (_pointMaterial == null)
