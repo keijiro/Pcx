@@ -65,8 +65,8 @@ namespace Pcx
 
         static Material GetDefaultMaterial()
         {
-            return AssetDatabase.GetBuiltinExtraResource<Material>(
-                "Default-Material.mat"
+            return AssetDatabase.LoadAssetAtPath<Material>(
+                "Assets/Pcx/Editor/Default Point.mat"
             );
         }
 

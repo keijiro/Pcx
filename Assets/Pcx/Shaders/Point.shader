@@ -5,7 +5,7 @@ Shader "Point Cloud/Point"
 {
     Properties
     {
-        _Color("Tint", Color) = (0.5, 0.5, 0.5, 1)
+        _Tint("Tint", Color) = (0.5, 0.5, 0.5, 1)
         _PointSize("Point Size", Float) = 0.05
         [Toggle] _Distance("Apply Distance", Float) = 1
     }
@@ -40,7 +40,7 @@ Shader "Point Cloud/Point"
                 UNITY_FOG_COORDS(0)
             };
 
-            half4 _Color;
+            half4 _Tint;
             float4x4 _Transform;
             half _PointSize;
 
@@ -64,9 +64,9 @@ Shader "Point Cloud/Point"
             #endif
 
             #ifdef UNITY_COLORSPACE_GAMMA
-                col *= _Color.rgb * 2;
+                col *= _Tint.rgb * 2;
             #else
-                col *= LinearToGammaSpace(_Color.rgb) * 2;
+                col *= LinearToGammaSpace(_Tint.rgb) * 2;
                 col = GammaToLinearSpace(col);
             #endif
 
@@ -84,7 +84,7 @@ Shader "Point Cloud/Point"
 
             half4 Fragment(Varyings input) : SV_Target
             {
-                half4 c = half4(input.color, _Color.a);
+                half4 c = half4(input.color, _Tint.a);
                 UNITY_APPLY_FOG(input.fogCoord, c);
                 return c;
             }

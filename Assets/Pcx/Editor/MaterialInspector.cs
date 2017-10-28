@@ -10,7 +10,7 @@ namespace Pcx
     {
         public override void OnGUI(MaterialEditor editor, MaterialProperty[] props)
         {
-            editor.ShaderProperty(FindProperty("_Color", props), "Tint");
+            editor.ShaderProperty(FindProperty("_Tint", props), "Tint");
             editor.ShaderProperty(FindProperty("_PointSize", props), "Point Size");
             editor.ShaderProperty(FindProperty("_Distance", props), "Apply Distance");
 
@@ -25,7 +25,7 @@ namespace Pcx
     {
         public override void OnGUI(MaterialEditor editor, MaterialProperty[] props)
         {
-            editor.ShaderProperty(FindProperty("_Color", props), "Tint");
+            editor.ShaderProperty(FindProperty("_Tint", props), "Tint");
             editor.ShaderProperty(FindProperty("_PointSize", props), "Point Size");
         }
     }

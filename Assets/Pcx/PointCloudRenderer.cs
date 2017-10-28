@@ -111,7 +111,7 @@ namespace Pcx
             if (_pointSize == 0)
             {
                 _pointMaterial.SetPass(0);
-                _pointMaterial.SetColor("_Color", _pointTint);
+                _pointMaterial.SetColor("_Tint", _pointTint);
                 _pointMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
                 _pointMaterial.SetBuffer("_PointBuffer", _pointBuffer);
                 Graphics.DrawProcedural(MeshTopology.Points, _source.pointCount, 1);
@@ -119,7 +119,7 @@ namespace Pcx
             else
             {
                 _diskMaterial.SetPass(0);
-                _diskMaterial.SetColor("_Color", _pointTint);
+                _diskMaterial.SetColor("_Tint", _pointTint);
                 _diskMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
                 _diskMaterial.SetBuffer("_PointBuffer", _pointBuffer);
                 _diskMaterial.SetFloat("_PointSize", _pointSize);
