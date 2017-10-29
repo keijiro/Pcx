@@ -24,6 +24,7 @@ Shader "Point Cloud/Point"
             #pragma multi_compile _ _DISTANCE_ON
             #pragma multi_compile _ _COMPUTE_BUFFER
 
+            #include "UnityCG.cginc"
             #include "Common.cginc"
 
             struct Attributes

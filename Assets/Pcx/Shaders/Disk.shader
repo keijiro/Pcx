@@ -24,6 +24,7 @@ Shader "Point Cloud/Disk"
             #pragma multi_compile _ UNITY_COLORSPACE_GAMMA
             #pragma multi_compile _ _COMPUTE_BUFFER
 
+            #include "UnityCG.cginc"
             #include "Common.cginc"
 
             struct Attributes
