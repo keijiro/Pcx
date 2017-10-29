@@ -24,6 +24,14 @@ Supported Formats
 
 Currently Pcx only supports PLY binary little-endian format.
 
+Installation
+------------
+
+Download one of the unitypackage files from the [Releases] page and import it
+to the project.
+
+[Releases]: https://github.com/keijiro/Pcx/releases
+
 Container Types
 ---------------
 
