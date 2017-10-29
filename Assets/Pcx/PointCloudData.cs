@@ -9,20 +9,41 @@ namespace Pcx
     /// A container class optimized for compute buffer.
     public sealed class PointCloudData : ScriptableObject
     {
-        #region Public properties and methods
+        #region Public properties
+
+        /// Byte size of the point element.
+        public const int elementSize = sizeof(float) * 4;
 
         /// Number of points.
         public int pointCount {
             get { return _pointData.Length; }
         }
 
-        /// Create a compute buffer.
-        /// The returned buffer must be released by the caller.
-        public ComputeBuffer CreateComputeBuffer()
+        /// Get access to the compute buffer that contains the point cloud.
+        public ComputeBuffer computeBuffer {
+            get {
+                if (_pointBuffer == null)
+                {
+                    _pointBuffer = new ComputeBuffer(pointCount, elementSize);
+                    _pointBuffer.SetData(_pointData);
+                }
+                return _pointBuffer;
+            }
+        }
+
+        #endregion
+
+        #region ScriptableObject implementation
+
+        ComputeBuffer _pointBuffer;
+
+        void OnDisable()
         {
-            var buffer = new ComputeBuffer(pointCount, sizeof(float) * 4);
-            buffer.SetData(_pointData);
-            return buffer;
+            if (_pointBuffer != null)
+            {
+                _pointBuffer.Release();
+                _pointBuffer = null;
+            }
         }
 
         #endregion

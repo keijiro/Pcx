@@ -11,11 +11,11 @@ namespace Pcx
     {
         #region Editable attributes
 
-        [SerializeField] PointCloudData _source;
+        [SerializeField] PointCloudData _sourceData;
 
-        public PointCloudData source {
-            get { return _source; }
-            set { _source = value; }
+        public PointCloudData sourceData {
+            get { return _sourceData; }
+            set { _sourceData = value; }
         }
 
         [SerializeField] Color _pointTint = new Color(0.5f, 0.5f, 0.5f, 1);
@@ -34,6 +34,12 @@ namespace Pcx
 
         #endregion
 
+        #region Public properties (nonserialized)
+
+        public ComputeBuffer sourceBuffer { get; set; }
+
+        #endregion
+
         #region Internal resources
 
         [SerializeField, HideInInspector] Shader _pointShader;
@@ -43,7 +49,6 @@ namespace Pcx
 
         #region Private objects
 
-        ComputeBuffer _pointBuffer;
         Material _pointMaterial;
         Material _diskMaterial;
 
@@ -54,16 +59,6 @@ namespace Pcx
         void OnValidate()
         {
             _pointSize = Mathf.Max(0, _pointSize);
-        }
-
-        void OnDisable()
-        {
-            // Note: This should be done in OnDisable, not in OnDestroy.
-            if (_pointBuffer != null)
-            {
-                _pointBuffer.Release();
-                _pointBuffer = null;
-            }
         }
 
         void OnDestroy()
@@ -85,8 +80,10 @@ namespace Pcx
 
         void OnRenderObject()
         {
-            if (_source == null) return;
+            // We need a source data or an externally given buffer.
+            if (_sourceData == null && sourceBuffer == null) return;
 
+            // Check the camera condition.
             var camera = Camera.current;
             if ((camera.cullingMask & (1 << gameObject.layer)) == 0) return;
             if (camera.name == "Preview Scene Camera") return;
@@ -94,9 +91,6 @@ namespace Pcx
             // TODO: Do view frustum culling here.
 
             // Lazy initialization
-            if (_pointBuffer == null)
-                _pointBuffer = _source.CreateComputeBuffer();
-
             if (_pointMaterial == null)
             {
                 _pointMaterial = new Material(_pointShader);
@@ -108,22 +102,26 @@ namespace Pcx
                 _diskMaterial.EnableKeyword("_COMPUTE_BUFFER");
             }
 
+            // Use the external buffer if given any.
+            var pointBuffer = sourceBuffer != null ?
+                sourceBuffer : _sourceData.computeBuffer;
+
             if (_pointSize == 0)
             {
                 _pointMaterial.SetPass(0);
                 _pointMaterial.SetColor("_Tint", _pointTint);
                 _pointMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
-                _pointMaterial.SetBuffer("_PointBuffer", _pointBuffer);
-                Graphics.DrawProcedural(MeshTopology.Points, _source.pointCount, 1);
+                _pointMaterial.SetBuffer("_PointBuffer", pointBuffer);
+                Graphics.DrawProcedural(MeshTopology.Points, pointBuffer.count, 1);
             }
             else
             {
                 _diskMaterial.SetPass(0);
                 _diskMaterial.SetColor("_Tint", _pointTint);
                 _diskMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
-                _diskMaterial.SetBuffer("_PointBuffer", _pointBuffer);
-                _diskMaterial.SetFloat("_PointSize", _pointSize);
-                Graphics.DrawProcedural(MeshTopology.Points, _source.pointCount, 1);
+                _diskMaterial.SetBuffer("_PointBuffer", pointBuffer);
+                _diskMaterial.SetFloat("_PointSize", pointSize);
+                Graphics.DrawProcedural(MeshTopology.Points, pointBuffer.count, 1);
             }
         }
 

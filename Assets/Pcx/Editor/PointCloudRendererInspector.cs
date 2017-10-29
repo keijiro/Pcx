@@ -10,13 +10,13 @@ namespace Pcx
     [CustomEditor(typeof(PointCloudRenderer))]
     public class PointCloudRendererInspector : Editor
     {
-        SerializedProperty _source;
+        SerializedProperty _sourceData;
         SerializedProperty _pointTint;
         SerializedProperty _pointSize;
 
         void OnEnable()
         {
-            _source = serializedObject.FindProperty("_source");
+            _sourceData = serializedObject.FindProperty("_sourceData");
             _pointTint = serializedObject.FindProperty("_pointTint");
             _pointSize = serializedObject.FindProperty("_pointSize");
         }
@@ -25,7 +25,7 @@ namespace Pcx
         {
             serializedObject.Update();
 
-            EditorGUILayout.PropertyField(_source);
+            EditorGUILayout.PropertyField(_sourceData);
             EditorGUILayout.PropertyField(_pointTint);
             EditorGUILayout.PropertyField(_pointSize);
 

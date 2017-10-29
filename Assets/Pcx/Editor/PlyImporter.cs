@@ -50,7 +50,7 @@ namespace Pcx
                 var data = ImportAsPointCloudData(context.assetPath);
 
                 var renderer = gameObject.AddComponent<PointCloudRenderer>();
-                renderer.source = data;
+                renderer.sourceData = data;
 
                 context.AddObjectToAsset("prefab", gameObject);
                 if (data != null) context.AddObjectToAsset("data", data);
