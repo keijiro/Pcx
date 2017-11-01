@@ -90,18 +90,23 @@ This method requires geometry shader support.
 Acknowledgements
 ----------------
 
-The point cloud files used in the examples (screenshots in this document) are
-created by [Thomas Flynn]. These files are licensed under the Creative Commons
-Attribution license ([CC BY 4.0]). Please see the following original pages for
-further details.
+The point cloud files used in the examples of Pcx are created by authors listed
+below. These files are licensed under the Creative Commons Attribution license
+([CC BY 4.0]). Please see the following original pages for further details.
 
-- richmond-azaelias.ply - Azaleas, Isabella Plantation, Richmond Park,
+- richmond-azaelias.ply - Azaleas, Isabella Plantation, Richmond Park.
+  Created by [Thomas Flynn].
   https://sketchfab.com/models/188576acfe89480f90c38d9df9a4b19a
 
-- anthidium-forcipatum.ply - Anthidium forcipatum ♀ (Point Cloud),
+- anthidium-forcipatum.ply - Anthidium forcipatum ♀ (Point Cloud).
+  Created by [Thomas Flynn].
   https://sketchfab.com/models/3493da15a8db4f34929fc38d9d0fcb2c
 
+- Guanyin.ply - Guanyin (Avalokitesvara). Created by [Geoffrey Marchal].
+  https://sketchfab.com/models/9db9a5dfb6744a5586dfcb96cb8a7dc5
+
 [Thomas Flynn]: https://sketchfab.com/nebulousflynn
+[Geoffrey Marchal]: https://sketchfab.com/geoffreymarchal
 [CC BY 4.0]: https://creativecommons.org/licenses/by/4.0/
 
 License
