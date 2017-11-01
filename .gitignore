@@ -13,3 +13,6 @@ Desktop.ini
 /Temp
 /UnityPackageManager
 /Packages
+
+/Extras/pcx-strip/*.o
+/Extras/pcx-strip/pcx-strip
