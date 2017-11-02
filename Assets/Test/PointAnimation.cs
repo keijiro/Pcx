@@ -7,6 +7,11 @@ public class PointAnimation : MonoBehaviour
     [SerializeField] PointCloudData _sourceData;
     [SerializeField] ComputeShader _computeShader;
 
+    [SerializeField] float _param1;
+    [SerializeField] float _param2;
+    [SerializeField] float _param3;
+    [SerializeField] float _param4;
+
     ComputeBuffer _pointBuffer;
 
     void OnDisable()
@@ -33,6 +38,10 @@ public class PointAnimation : MonoBehaviour
         var time = Application.isPlaying ? Time.time : 0;
 
         var kernel = _computeShader.FindKernel("Main");
+        _computeShader.SetFloat("Param1", _param1);
+        _computeShader.SetFloat("Param2", _param2);
+        _computeShader.SetFloat("Param3", _param3);
+        _computeShader.SetFloat("Param4", _param4);
         _computeShader.SetFloat("Time", time);
         _computeShader.SetBuffer(kernel, "SourceBuffer", sourceBuffer);
         _computeShader.SetBuffer(kernel, "OutputBuffer", _pointBuffer);
