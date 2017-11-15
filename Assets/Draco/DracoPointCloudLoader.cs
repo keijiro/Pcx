@@ -47,7 +47,6 @@ public unsafe class DracoPointCloudLoader
 		var bin_reader = new BinaryReader(stream);
 		var data = bin_reader.ReadBytes(int.MaxValue);
 
-		Debug.Log (data.Length.ToString ());
 		if (data.Length == 0) {
 			Debug.Log ("Didn't load data!");
 			return -1;
@@ -101,19 +100,36 @@ public unsafe class DracoPointCloudLoader
 		for (int i = 0; i < tmp_point_cloud->num_vertices; ++i) {
 			for (int j = 0; j < 3; ++j) {
 					new_points [i] [j] = 
-						ReadFloatFromIntPtr (tmp_point_cloud->position, i * byte_stride_per_vertex + byte_stride_per_value * j) * 60;
+						ReadFloatFromIntPtr (tmp_point_cloud->position, i * byte_stride_per_vertex + byte_stride_per_value * j);
 			}
 		}
 			
 		points.AddRange (new_points);
 
-		for ( var i = 0; i < new_points.Length; i++){ 
+		/*for ( var i = 0; i < new_points.Length; i++){ 
 			UnitySerializer us = new UnitySerializer();
 			us.Serialize(tmp_point_cloud->color[i]);
 			byte[] byteArray = us.ByteArray;
 			colors.Add(new Color32(byteArray[0], byteArray[1], byteArray[2], byteArray[3]));
+		}*/
+		int color_byte_stride_per_value = 1;
+		int color_num_value_per_vertex = 4;
+		int color_byte_stride_per_vertex = color_byte_stride_per_value * color_num_value_per_vertex;
+
+		Byte r = 255, g = 255, b = 255, a = 255;
+		for (int i = 0; i < tmp_point_cloud->num_vertices; ++i) {
+			var location = (i * color_byte_stride_per_vertex + color_byte_stride_per_value * 0);
+			var c = BitConverter.GetBytes(tmp_point_cloud->color[location]);
+			r = c[0];
+			g = c[1];
+			b = c[2];
+			a = c[3];
+				
+			colors.Add(new Color32(r, g, b, a));
+				
 		}
-			
+		Debug.Log ("New Color: " + colors[0].ToString ());
+
 		Marshal.FreeCoTaskMem (tmp_point_cloud->position);
 		Marshal.FreeCoTaskMem ((IntPtr)tmp_point_cloud);
 
