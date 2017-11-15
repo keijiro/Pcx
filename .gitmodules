@@ -1,0 +1,4 @@
+[submodule "Extras/draco"]
+	path = Extras/draco
+	url = https://github.com/millerhooks/draco.git
+        branch = unity_point_cloud_plugin
