@@ -76,25 +76,30 @@ namespace Pcx
 
         enum DataProperty {
             Invalid,
-            X, Y, Z,
             R, G, B, A,
-            Data8, Data16, Data32
+            SingleX, SingleY, SingleZ,
+            DoubleX, DoubleY, DoubleZ,
+            Data8, Data16, Data32, Data64
         }
 
         static int GetPropertySize(DataProperty p)
         {
             switch (p)
             {
-                case DataProperty.X: return 4;
-                case DataProperty.Y: return 4;
-                case DataProperty.Z: return 4;
                 case DataProperty.R: return 1;
                 case DataProperty.G: return 1;
                 case DataProperty.B: return 1;
                 case DataProperty.A: return 1;
+                case DataProperty.SingleX: return 4;
+                case DataProperty.SingleY: return 4;
+                case DataProperty.SingleZ: return 4;
+                case DataProperty.DoubleX: return 8;
+                case DataProperty.DoubleY: return 8;
+                case DataProperty.DoubleZ: return 8;
                 case DataProperty.Data8: return 1;
                 case DataProperty.Data16: return 2;
                 case DataProperty.Data32: return 4;
+                case DataProperty.Data64: return 8;
             }
             return 0;
         }
@@ -234,13 +239,13 @@ namespace Pcx
                     // Parse the property name entry.
                     switch (col[2])
                     {
-                        case "x"    : prop = DataProperty.X; break;
-                        case "y"    : prop = DataProperty.Y; break;
-                        case "z"    : prop = DataProperty.Z; break;
                         case "red"  : prop = DataProperty.R; break;
                         case "green": prop = DataProperty.G; break;
                         case "blue" : prop = DataProperty.B; break;
                         case "alpha": prop = DataProperty.A; break;
+                        case "x"    : prop = DataProperty.SingleX; break;
+                        case "y"    : prop = DataProperty.SingleY; break;
+                        case "z"    : prop = DataProperty.SingleZ; break;
                     }
 
                     // Check the property type.
@@ -263,6 +268,18 @@ namespace Pcx
                         if (prop == DataProperty.Invalid)
                             prop = DataProperty.Data32;
                         else if (GetPropertySize(prop) != 4)
+                            throw new ArgumentException("Invalid property type ('" + line + "').");
+                    }
+                    else if (col[1] == "double")
+                    {
+                        switch (prop)
+                        {
+                            case DataProperty.Invalid: prop = DataProperty.Data64; break;
+                            case DataProperty.SingleX: prop = DataProperty.DoubleX; break;
+                            case DataProperty.SingleY: prop = DataProperty.DoubleY; break;
+                            case DataProperty.SingleZ: prop = DataProperty.DoubleZ; break;
+                        }
+                        if (GetPropertySize(prop) != 8)
                             throw new ArgumentException("Invalid property type ('" + line + "').");
                     }
                     else
@@ -293,18 +310,23 @@ namespace Pcx
                 {
                     switch (prop)
                     {
-                        case DataProperty.X: x = reader.ReadSingle(); break;
-                        case DataProperty.Y: y = reader.ReadSingle(); break;
-                        case DataProperty.Z: z = reader.ReadSingle(); break;
-
                         case DataProperty.R: r = reader.ReadByte(); break;
                         case DataProperty.G: g = reader.ReadByte(); break;
                         case DataProperty.B: b = reader.ReadByte(); break;
                         case DataProperty.A: a = reader.ReadByte(); break;
 
+                        case DataProperty.SingleX: x = reader.ReadSingle(); break;
+                        case DataProperty.SingleY: y = reader.ReadSingle(); break;
+                        case DataProperty.SingleZ: z = reader.ReadSingle(); break;
+
+                        case DataProperty.DoubleX: x = (float)reader.ReadDouble(); break;
+                        case DataProperty.DoubleY: y = (float)reader.ReadDouble(); break;
+                        case DataProperty.DoubleZ: z = (float)reader.ReadDouble(); break;
+
                         case DataProperty.Data8: reader.ReadByte(); break;
                         case DataProperty.Data16: reader.BaseStream.Position += 2; break;
                         case DataProperty.Data32: reader.BaseStream.Position += 4; break;
+                        case DataProperty.Data64: reader.BaseStream.Position += 8; break;
                     }
                 }
 
