@@ -1,0 +1,9 @@
+{
+    "name": "jp.keijiro.pcx",
+    "displayName": "PCX",
+    "version": "0.1.2",
+    "unity": "2018.3",
+    "author": "Keijiro Takahashi",
+    "description": "Point cloud importer & renderer",
+    "dependencies": { }
+}
