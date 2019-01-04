@@ -11,7 +11,7 @@ namespace Pcx
     {
         #region Editable attributes
 
-        [SerializeField] PointCloudData _sourceData;
+        [SerializeField] PointCloudData _sourceData = null;
 
         public PointCloudData sourceData {
             get { return _sourceData; }
@@ -42,8 +42,8 @@ namespace Pcx
 
         #region Internal resources
 
-        [SerializeField, HideInInspector] Shader _pointShader;
-        [SerializeField, HideInInspector] Shader _diskShader;
+        [SerializeField, HideInInspector] Shader _pointShader = null;
+        [SerializeField, HideInInspector] Shader _diskShader = null;
 
         #endregion
 

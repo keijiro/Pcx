@@ -4,13 +4,13 @@ using Pcx;
 [ExecuteInEditMode]
 public class PointAnimation : MonoBehaviour
 {
-    [SerializeField] PointCloudData _sourceData;
-    [SerializeField] ComputeShader _computeShader;
+    [SerializeField] PointCloudData _sourceData = null;
+    [SerializeField] ComputeShader _computeShader = null;
 
-    [SerializeField] float _param1;
-    [SerializeField] float _param2;
-    [SerializeField] float _param3;
-    [SerializeField] float _param4;
+    [SerializeField] float _param1 = 0;
+    [SerializeField] float _param2 = 0;
+    [SerializeField] float _param3 = 0;
+    [SerializeField] float _param4 = 0;
 
     ComputeBuffer _pointBuffer;
 

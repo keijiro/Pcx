@@ -20,7 +20,7 @@ namespace Pcx
 
         public enum ContainerType { Mesh, ComputeBuffer  }
 
-        [SerializeField] ContainerType _containerType;
+        [SerializeField] ContainerType _containerType = ContainerType.Mesh;
 
         public override void OnImportAsset(AssetImportContext context)
         {
