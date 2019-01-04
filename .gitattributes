@@ -7,3 +7,7 @@
 *.compute   text eol=lf
 
 *.meta      text eol=lf
+
+*.cpp       text eol=lf
+*.h         text eol=lf
+Makefile    text eol=lf
