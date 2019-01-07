@@ -27,10 +27,21 @@ Currently Pcx only supports PLY binary little-endian format.
 Installation
 ------------
 
-Download one of the unitypackage files from the [Releases] page and import it
-to the project.
+Download and import one of the `.unitypackage` files from [Releases] page.
+
+You can also use [Git support on Package Manager] to import the package. Add
+the following line to the `dependencies` section in the package manifest file
+(`Packages/manifest.json`). Note that this feature is only available from
+Unity 2018.3. See [the forum thread][Git support on Package Manager] for
+futher details.
+
+```
+"jp.keijiro.pcx": "https://github.com/keijiro/Pcx.git#upm"
+```
 
 [Releases]: https://github.com/keijiro/Pcx/releases
+[Git support on Package Manager]:
+    https://forum.unity.com/threads/git-support-on-package-manager.573673/
 
 Container Types
 ---------------
