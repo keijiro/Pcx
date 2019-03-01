@@ -15,10 +15,6 @@ System Requirements
 Pcx uses the 32-bit vertex index format that is newly introduced in Unity
 2017.3, so it's not compatible with the previous versions of Unity.
 
-At the time this document is written, Unity 2017.3 is still in the beta testing
-phase. Note that it possibly introduces some issues with the final released
-version.
-
 Supported Formats
 -----------------
 
@@ -48,7 +44,7 @@ Container Types
 
 ![Inspector](https://i.imgur.com/Da0p6uV.png)
 
-There are two types of container for point clouds.
+There are three types of container for point clouds.
 
 ### Mesh
 
@@ -62,9 +58,12 @@ Points are to be contained in a `PointCloudData` object, which uses
 `ComputeBuffer` to store point data. It can be rendered with using the
 `PointCloudRenderer` component.
 
-There are no significant performance difference between these two container
-types. The `ComputeBuffer` type is just convenient for animating points with
-using compute shaders.
+### Texture
+
+Points are baked into `Texture2D` objects that can be used as attribute maps
+in [Visual Effect Graph].
+
+[Visual Effect Graph]: https://unity.com/visual-effect-graph
 
 Rendering Methods
 -----------------
