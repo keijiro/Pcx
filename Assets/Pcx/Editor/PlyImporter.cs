@@ -18,7 +18,7 @@ namespace Pcx
     {
         #region ScriptedImporter implementation
 
-        public enum ContainerType { Mesh, ComputeBuffer  }
+        public enum ContainerType { Mesh, ComputeBuffer, Texture  }
 
         [SerializeField] ContainerType _containerType = ContainerType.Mesh;
 
@@ -42,7 +42,7 @@ namespace Pcx
 
                 context.SetMainObject(gameObject);
             }
-            else
+            else if (_containerType == ContainerType.ComputeBuffer)
             {
                 // ComputeBuffer container
                 // Create a prefab with PointCloudRenderer.
@@ -56,6 +56,19 @@ namespace Pcx
                 if (data != null) context.AddObjectToAsset("data", data);
 
                 context.SetMainObject(gameObject);
+            }
+            else // _containerType == ContainerType.Texture
+            {
+                // Texture container
+                // No prefab is available for this type.
+                var data = ImportAsBakedPointCloud(context.assetPath);
+                if (data != null)
+                {
+                    context.AddObjectToAsset("container", data);
+                    context.AddObjectToAsset("position", data.positionMap);
+                    context.AddObjectToAsset("color", data.colorMap);
+                    context.SetMainObject(data);
+                }
             }
         }
 
@@ -183,6 +196,25 @@ namespace Pcx
                 var header = ReadDataHeader(new StreamReader(stream));
                 var body = ReadDataBody(header, new BinaryReader(stream));
                 var data = ScriptableObject.CreateInstance<PointCloudData>();
+                data.Initialize(body.vertices, body.colors);
+                data.name = Path.GetFileNameWithoutExtension(path);
+                return data;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Failed importing " + path + ". " + e.Message);
+                return null;
+            }
+        }
+
+        BakedPointCloud ImportAsBakedPointCloud(string path)
+        {
+            try
+            {
+                var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                var header = ReadDataHeader(new StreamReader(stream));
+                var body = ReadDataBody(header, new BinaryReader(stream));
+                var data = ScriptableObject.CreateInstance<BakedPointCloud>();
                 data.Initialize(body.vertices, body.colors);
                 data.name = Path.GetFileNameWithoutExtension(path);
                 return data;
