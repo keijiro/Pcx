@@ -18,7 +18,7 @@ namespace Pcx
     {
         #region ScriptedImporter implementation
 
-        public enum ContainerType { Mesh, ComputeBuffer  }
+        public enum ContainerType { Mesh, ComputeBuffer, Texture  }
 
         [SerializeField] ContainerType _containerType = ContainerType.Mesh;
 
@@ -42,7 +42,7 @@ namespace Pcx
 
                 context.SetMainObject(gameObject);
             }
-            else
+            else if (_containerType == ContainerType.ComputeBuffer)
             {
                 // ComputeBuffer container
                 // Create a prefab with PointCloudRenderer.
@@ -56,6 +56,19 @@ namespace Pcx
                 if (data != null) context.AddObjectToAsset("data", data);
 
                 context.SetMainObject(gameObject);
+            }
+            else // _containerType == ContainerType.Texture
+            {
+                // Texture container
+                // No prefab is available for this type.
+                var data = ImportAsBakedPointCloud(context.assetPath);
+                if (data != null)
+                {
+                    context.AddObjectToAsset("container", data);
+                    context.AddObjectToAsset("position", data.positionMap);
+                    context.AddObjectToAsset("color", data.colorMap);
+                    context.SetMainObject(data);
+                }
             }
         }
 
@@ -79,7 +92,8 @@ namespace Pcx
 
         enum DataProperty {
             Invalid,
-            R, G, B, A,
+            R8, G8, B8, A8,
+            R16, G16, B16, A16,
             SingleX, SingleY, SingleZ,
             DoubleX, DoubleY, DoubleZ,
             Data8, Data16, Data32, Data64
@@ -89,10 +103,14 @@ namespace Pcx
         {
             switch (p)
             {
-                case DataProperty.R: return 1;
-                case DataProperty.G: return 1;
-                case DataProperty.B: return 1;
-                case DataProperty.A: return 1;
+                case DataProperty.R8: return 1;
+                case DataProperty.G8: return 1;
+                case DataProperty.B8: return 1;
+                case DataProperty.A8: return 1;
+                case DataProperty.R16: return 2;
+                case DataProperty.G16: return 2;
+                case DataProperty.B16: return 2;
+                case DataProperty.A16: return 2;
                 case DataProperty.SingleX: return 4;
                 case DataProperty.SingleY: return 4;
                 case DataProperty.SingleZ: return 4;
@@ -189,6 +207,25 @@ namespace Pcx
             }
         }
 
+        BakedPointCloud ImportAsBakedPointCloud(string path)
+        {
+            try
+            {
+                var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+                var header = ReadDataHeader(new StreamReader(stream));
+                var body = ReadDataBody(header, new BinaryReader(stream));
+                var data = ScriptableObject.CreateInstance<BakedPointCloud>();
+                data.Initialize(body.vertices, body.colors);
+                data.name = Path.GetFileNameWithoutExtension(path);
+                return data;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError("Failed importing " + path + ". " + e.Message);
+                return null;
+            }
+        }
+
         DataHeader ReadDataHeader(StreamReader reader)
         {
             var data = new DataHeader();
@@ -242,38 +279,48 @@ namespace Pcx
                     // Parse the property name entry.
                     switch (col[2])
                     {
-                        case "red"  : prop = DataProperty.R; break;
-                        case "green": prop = DataProperty.G; break;
-                        case "blue" : prop = DataProperty.B; break;
-                        case "alpha": prop = DataProperty.A; break;
+                        case "red"  : prop = DataProperty.R8; break;
+                        case "green": prop = DataProperty.G8; break;
+                        case "blue" : prop = DataProperty.B8; break;
+                        case "alpha": prop = DataProperty.A8; break;
                         case "x"    : prop = DataProperty.SingleX; break;
                         case "y"    : prop = DataProperty.SingleY; break;
                         case "z"    : prop = DataProperty.SingleZ; break;
                     }
 
                     // Check the property type.
-                    if (col[1] == "char" || col[1] == "uchar")
+                    if (col[1] == "char" || col[1] == "uchar" ||
+                        col[1] == "int8" || col[1] == "uint8")
                     {
                         if (prop == DataProperty.Invalid)
                             prop = DataProperty.Data8;
                         else if (GetPropertySize(prop) != 1)
                             throw new ArgumentException("Invalid property type ('" + line + "').");
                     }
-                    else if (col[1] == "short" || col[1] == "ushort")
+                    else if (col[1] == "short" || col[1] == "ushort" ||
+                             col[1] == "int16" || col[1] == "uint16")
                     {
-                        if (prop == DataProperty.Invalid)
-                            prop = DataProperty.Data16;
-                        else if (GetPropertySize(prop) != 2)
+                        switch (prop)
+                        {
+                            case DataProperty.Invalid: prop = DataProperty.Data16; break;
+                            case DataProperty.R8: prop = DataProperty.R16; break;
+                            case DataProperty.G8: prop = DataProperty.G16; break;
+                            case DataProperty.B8: prop = DataProperty.B16; break;
+                            case DataProperty.A8: prop = DataProperty.A16; break;
+                        }
+                        if (GetPropertySize(prop) != 2)
                             throw new ArgumentException("Invalid property type ('" + line + "').");
                     }
-                    else if (col[1] == "int" || col[1] == "uint" || col[1] == "float")
+                    else if (col[1] == "int"   || col[1] == "uint"   || col[1] == "float" ||
+                             col[1] == "int32" || col[1] == "uint32" || col[1] == "float32")
                     {
                         if (prop == DataProperty.Invalid)
                             prop = DataProperty.Data32;
                         else if (GetPropertySize(prop) != 4)
                             throw new ArgumentException("Invalid property type ('" + line + "').");
                     }
-                    else if (col[1] == "double")
+                    else if (col[1] == "int64"  || col[1] == "uint64" ||
+                             col[1] == "double" || col[1] == "float64")
                     {
                         switch (prop)
                         {
@@ -313,10 +360,15 @@ namespace Pcx
                 {
                     switch (prop)
                     {
-                        case DataProperty.R: r = reader.ReadByte(); break;
-                        case DataProperty.G: g = reader.ReadByte(); break;
-                        case DataProperty.B: b = reader.ReadByte(); break;
-                        case DataProperty.A: a = reader.ReadByte(); break;
+                        case DataProperty.R8: r = reader.ReadByte(); break;
+                        case DataProperty.G8: g = reader.ReadByte(); break;
+                        case DataProperty.B8: b = reader.ReadByte(); break;
+                        case DataProperty.A8: a = reader.ReadByte(); break;
+
+                        case DataProperty.R16: r = (byte)(reader.ReadUInt16() >> 8); break;
+                        case DataProperty.G16: g = (byte)(reader.ReadUInt16() >> 8); break;
+                        case DataProperty.B16: b = (byte)(reader.ReadUInt16() >> 8); break;
+                        case DataProperty.A16: a = (byte)(reader.ReadUInt16() >> 8); break;
 
                         case DataProperty.SingleX: x = reader.ReadSingle(); break;
                         case DataProperty.SingleY: y = reader.ReadSingle(); break;
