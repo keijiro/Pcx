@@ -4,7 +4,7 @@ Pcx - Point Cloud Importer/Renderer for Unity
 ![GIF](https://i.imgur.com/zc6P96x.gif)
 ![GIF](https://i.imgur.com/lpWIiXu.gif)
 
-**Pcx** is a custom importer and renderer that allows handling point cloud data
+**Pcx** is a custom importer and renderer that allows for handling point cloud data
 in Unity.
 
 System Requirements
@@ -27,7 +27,7 @@ Download and import one of the `.unitypackage` files from [Releases] page.
 
 You can also use [Git support on Package Manager] to import the package. Add
 the following line to the `dependencies` section in the package manifest file
-(`Packages/manifest.json`). Note that this feature is only available from
+(`Packages/manifest.json`). Note that this feature is only available in
 Unity 2018.3. See [the forum thread][Git support on Package Manager] for
 futher details.
 
@@ -78,14 +78,14 @@ shader.
 ![Points](https://i.imgur.com/aY4QMtb.png)
 ![Points](https://i.imgur.com/jJAhLI2.png)
 
-The size of points can be adjusted by the material properties.
+The size of points can be adjusted by changing the material properties.
 
 ![Inspector](https://i.imgur.com/gEMmxTH.png)
 
 These size properties are only supported on some platforms; It may work with
 OpenGLCore and Metal, but never work with D3D11/12.
 
-This methods is also used when the point size is set to zero in
+This method is also used when the point size is set to zero in
 `PointCloudRenderer`.
 
 ### Disk (geometry shader)
