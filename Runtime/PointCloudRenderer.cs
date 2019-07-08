@@ -112,7 +112,11 @@ namespace Pcx
                 _pointMaterial.SetColor("_Tint", _pointTint);
                 _pointMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
                 _pointMaterial.SetBuffer("_PointBuffer", pointBuffer);
+                #if UNITY_2019_1_OR_NEWER
+                Graphics.DrawProceduralNow(MeshTopology.Points, pointBuffer.count, 1);
+                #else
                 Graphics.DrawProcedural(MeshTopology.Points, pointBuffer.count, 1);
+                #endif
             }
             else
             {
@@ -121,7 +125,11 @@ namespace Pcx
                 _diskMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
                 _diskMaterial.SetBuffer("_PointBuffer", pointBuffer);
                 _diskMaterial.SetFloat("_PointSize", pointSize);
+                #if UNITY_2019_1_OR_NEWER
+                Graphics.DrawProceduralNow(MeshTopology.Points, pointBuffer.count, 1);
+                #else
                 Graphics.DrawProcedural(MeshTopology.Points, pointBuffer.count, 1);
+                #endif
             }
         }
 
