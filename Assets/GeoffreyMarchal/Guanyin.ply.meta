@@ -1,15 +1,26 @@
 fileFormatVersion: 2
 guid: 08fb0939e6171ce4eac591c16d8cbfa6
 ScriptedImporter:
-  fileIDToRecycleName:
-    100000: prefab/New Game Object
-    400000: prefab/New Game Object/Transform
-    11400000: prefab/New Game Object/MonoBehaviour-Pcx.PointCloudRenderer
-    11400002: data
-    100100000: prefab
+  internalIDToNameTable:
+  - first:
+      1: 100000
+    second: prefab/New Game Object
+  - first:
+      4: 400000
+    second: prefab/New Game Object/Transform
+  - first:
+      114: 11400000
+    second: prefab/New Game Object/MonoBehaviour-Pcx.PointCloudRenderer
+  - first:
+      114: 11400002
+    second: data
+  - first:
+      1001: 100100000
+    second: prefab
   externalObjects: {}
+  serializedVersion: 2
   userData: 
   assetBundleName: 
   assetBundleVariant: 
   script: {fileID: 11500000, guid: 183c1cb276390b14e883dae29f585dfa, type: 3}
-  _containerType: 1
+  _containerType: 2
