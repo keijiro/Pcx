@@ -10,6 +10,7 @@ Desktop.ini
 
 # Unity
 /Library
+/Logs
 /Temp
 
 /Extras/pcx-strip/*.o

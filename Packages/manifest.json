@@ -1,13 +1,11 @@
 {
   "dependencies": {
-    "com.unity.analytics": "3.2.2",
-    "com.unity.package-manager-ui": "2.0.3",
+    "com.unity.package-manager-ui": "2.1.2",
+    "com.unity.timeline": "1.0.0",
     "com.unity.modules.animation": "1.0.0",
     "com.unity.modules.audio": "1.0.0",
     "com.unity.modules.director": "1.0.0",
-    "com.unity.modules.jsonserialize": "1.0.0",
-    "com.unity.modules.unityanalytics": "1.0.0",
-    "com.unity.modules.unitywebrequest": "1.0.0",
-    "com.unity.modules.video": "1.0.0"
+    "com.unity.modules.imgui": "1.0.0",
+    "com.unity.modules.particlesystem": "1.0.0"
   }
 }
