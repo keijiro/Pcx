@@ -8,6 +8,7 @@ using UnityEditor.Experimental.AssetImporters;
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 
@@ -90,10 +91,18 @@ namespace Pcx
 
         #region Internal data structure
 
+        enum DataFormat
+        {
+            Undefined = -1,
+            Ascii,
+            BinaryLittleEndian
+        };
+
         enum DataProperty {
             Invalid,
             R8, G8, B8, A8,
             R16, G16, B16, A16,
+            R32, G32, B32, A32,
             SingleX, SingleY, SingleZ,
             DoubleX, DoubleY, DoubleZ,
             Data8, Data16, Data32, Data64
@@ -111,6 +120,10 @@ namespace Pcx
                 case DataProperty.G16: return 2;
                 case DataProperty.B16: return 2;
                 case DataProperty.A16: return 2;
+                case DataProperty.R32: return 4;
+                case DataProperty.G32: return 4;
+                case DataProperty.B32: return 4;
+                case DataProperty.A32: return 4;
                 case DataProperty.SingleX: return 4;
                 case DataProperty.SingleY: return 4;
                 case DataProperty.SingleZ: return 4;
@@ -127,6 +140,7 @@ namespace Pcx
 
         class DataHeader
         {
+            public DataFormat dataFormat = DataFormat.Undefined;
             public List<DataProperty> properties = new List<DataProperty>();
             public int vertexCount = -1;
         }
@@ -156,13 +170,30 @@ namespace Pcx
 
         #region Reader implementation
 
+        void ReadHeaderAndData(string path, out DataHeader header, out DataBody body)
+        {
+            var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
+
+            header = ReadDataHeader(new StreamReader(stream));
+
+            body = null;
+            switch (header.dataFormat)
+            {
+                case DataFormat.BinaryLittleEndian :
+                    body = ReadDataBodyFormatBinaryLittleEndian(header, new BinaryReader(stream));
+                    break;
+
+                case DataFormat.Ascii :
+                    body = ReadDataBodyFormatAscii(header, new StreamReader(stream));
+                    break;
+            }
+        }
+
         Mesh ImportAsMesh(string path)
         {
             try
             {
-                var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                var header = ReadDataHeader(new StreamReader(stream));
-                var body = ReadDataBody(header, new BinaryReader(stream));
+                ReadHeaderAndData(path, out var header, out var body);
 
                 var mesh = new Mesh();
                 mesh.name = Path.GetFileNameWithoutExtension(path);
@@ -192,9 +223,8 @@ namespace Pcx
         {
             try
             {
-                var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                var header = ReadDataHeader(new StreamReader(stream));
-                var body = ReadDataBody(header, new BinaryReader(stream));
+                ReadHeaderAndData(path, out var header, out var body);
+
                 var data = ScriptableObject.CreateInstance<PointCloudData>();
                 data.Initialize(body.vertices, body.colors);
                 data.name = Path.GetFileNameWithoutExtension(path);
@@ -211,9 +241,8 @@ namespace Pcx
         {
             try
             {
-                var stream = File.Open(path, FileMode.Open, FileAccess.Read, FileShare.Read);
-                var header = ReadDataHeader(new StreamReader(stream));
-                var body = ReadDataBody(header, new BinaryReader(stream));
+                ReadHeaderAndData(path, out var header, out var body);
+
                 var data = ScriptableObject.CreateInstance<BakedPointCloud>();
                 data.Initialize(body.vertices, body.colors);
                 data.name = Path.GetFileNameWithoutExtension(path);
@@ -240,10 +269,20 @@ namespace Pcx
             // Data format: check if it's binary/little endian.
             line = reader.ReadLine();
             readCount += line.Length + 1;
-            if (line != "format binary_little_endian 1.0")
-                throw new ArgumentException(
-                    "Invalid data format ('" + line + "'). " +
-                    "Should be binary/little endian.");
+
+            switch (line)
+            {
+                case "format binary_little_endian 1.0" :
+                    data.dataFormat = DataFormat.BinaryLittleEndian;
+                    break;
+
+                case "format ascii 1.0" : 
+                    data.dataFormat = DataFormat.Ascii;
+                    break;
+
+                default:
+                    throw new ArgumentException($"Invalid data format ('{line}'). Should be binary(little endian) or ASCII");
+            }
 
             // Read header contents.
             for (var skip = false;;)
@@ -252,10 +291,14 @@ namespace Pcx
                 line = reader.ReadLine();
                 readCount += line.Length + 1;
                 if (line == "end_header") break;
-                var col = line.Split();
+                var col = line.ToLower().Split();
 
-                // Element declaration (unskippable)
-                if (col[0] == "element")
+                if (col[0] == "comment")
+                {
+                    skip = true;
+                }
+                else
+                if (col[0] == "element") // Element declaration (unskippable)
                 {
                     if (col[1] == "vertex")
                     {
@@ -314,9 +357,15 @@ namespace Pcx
                     else if (col[1] == "int"   || col[1] == "uint"   || col[1] == "float" ||
                              col[1] == "int32" || col[1] == "uint32" || col[1] == "float32")
                     {
-                        if (prop == DataProperty.Invalid)
-                            prop = DataProperty.Data32;
-                        else if (GetPropertySize(prop) != 4)
+                        switch (prop)
+                        {
+                            case DataProperty.Invalid: prop = DataProperty.Data32; break;
+                            case DataProperty.R8: prop = DataProperty.R32; break;
+                            case DataProperty.G8: prop = DataProperty.G32; break;
+                            case DataProperty.B8: prop = DataProperty.B32; break;
+                            case DataProperty.A8: prop = DataProperty.A32; break;
+                        }
+                        if (GetPropertySize(prop) != 4)
                             throw new ArgumentException("Invalid property type ('" + line + "').");
                     }
                     else if (col[1] == "int64"  || col[1] == "uint64" ||
@@ -341,13 +390,21 @@ namespace Pcx
                 }
             }
 
-            // Rewind the stream back to the exact position of the reader.
-            reader.BaseStream.Position = readCount;
+
+            if (data.dataFormat == DataFormat.BinaryLittleEndian)
+            {
+                // Rewind the stream back to the exact position of the reader (LF line endings)
+                reader.BaseStream.Position = readCount;
+            }
+            else
+            {
+                reader.BaseStream.Position = 0;
+            }
 
             return data;
         }
 
-        DataBody ReadDataBody(DataHeader header, BinaryReader reader)
+        DataBody ReadDataBodyFormatBinaryLittleEndian(DataHeader header, BinaryReader reader)
         {
             var data = new DataBody(header.vertexCount);
 
@@ -370,6 +427,11 @@ namespace Pcx
                         case DataProperty.B16: b = (byte)(reader.ReadUInt16() >> 8); break;
                         case DataProperty.A16: a = (byte)(reader.ReadUInt16() >> 8); break;
 
+                        case DataProperty.R32: r = (byte)(reader.ReadSingle() * 255.0f); break;
+                        case DataProperty.G32: g = (byte)(reader.ReadSingle() * 255.0f); break;
+                        case DataProperty.B32: b = (byte)(reader.ReadSingle() * 255.0f); break;
+                        case DataProperty.A32: a = (byte)(reader.ReadSingle() * 255.0f); break;
+
                         case DataProperty.SingleX: x = reader.ReadSingle(); break;
                         case DataProperty.SingleY: y = reader.ReadSingle(); break;
                         case DataProperty.SingleZ: z = reader.ReadSingle(); break;
@@ -382,6 +444,70 @@ namespace Pcx
                         case DataProperty.Data16: reader.BaseStream.Position += 2; break;
                         case DataProperty.Data32: reader.BaseStream.Position += 4; break;
                         case DataProperty.Data64: reader.BaseStream.Position += 8; break;
+                    }
+                }
+
+                data.AddPoint(x, y, z, r, g, b, a);
+            }
+
+            return data;
+        }
+
+        DataBody ReadDataBodyFormatAscii(DataHeader header, StreamReader reader)
+        {
+            var data = new DataBody(header.vertexCount);
+
+            float x = 0, y = 0, z = 0;
+            Byte r = 255, g = 255, b = 255, a = 255;
+
+            var line = reader.ReadLine();
+
+            // Skip header
+            while (line != "end_header")
+            {
+                line = reader.ReadLine();
+            }
+
+            // Parse data according to properties list
+            int propertiesCount = header.properties.Count;
+
+            var ci = (CultureInfo)CultureInfo.CurrentCulture.Clone();
+            ci.NumberFormat.NumberDecimalSeparator = ".";
+
+            for (var i = 0; i < header.vertexCount; ++i)
+            {
+                line = reader.ReadLine();
+                var values = line.Split();
+
+                for (int j = 0; j < propertiesCount; ++j)
+                {
+                    var prop = header.properties[j];
+                    var value = values[j];
+
+                    switch (prop)
+                    {
+                        case DataProperty.R8: r = Byte.Parse(value); break;
+                        case DataProperty.G8: g = Byte.Parse(value); break;
+                        case DataProperty.B8: b = Byte.Parse(value); break;
+                        case DataProperty.A8: a = Byte.Parse(value); break;
+
+                        case DataProperty.R16: r = (byte) (UInt16.Parse(value) >> 8); break;
+                        case DataProperty.G16: g = (byte) (UInt16.Parse(value) >> 8); break;
+                        case DataProperty.B16: b = (byte) (UInt16.Parse(value) >> 8); break;
+                        case DataProperty.A16: a = (byte) (UInt16.Parse(value) >> 8); break;
+
+                        case DataProperty.R32: r = (byte) (float.Parse(value, NumberStyles.Float, ci) * 255.0f); break;
+                        case DataProperty.G32: g = (byte) (float.Parse(value, NumberStyles.Float, ci) * 255.0f); break;
+                        case DataProperty.B32: b = (byte) (float.Parse(value, NumberStyles.Float, ci) * 255.0f); break;
+                        case DataProperty.A32: a = (byte) (float.Parse(value, NumberStyles.Float, ci) * 255.0f); break;
+
+                        case DataProperty.SingleX: x = float.Parse(value, NumberStyles.Float, ci); break;
+                        case DataProperty.SingleY: y = float.Parse(value, NumberStyles.Float, ci); break;
+                        case DataProperty.SingleZ: z = float.Parse(value, NumberStyles.Float, ci); break;
+
+                        case DataProperty.DoubleX: x = (float)double.Parse(value, NumberStyles.Float, ci); break;
+                        case DataProperty.DoubleY: y = (float)double.Parse(value, NumberStyles.Float, ci); break;
+                        case DataProperty.DoubleZ: z = (float)double.Parse(value, NumberStyles.Float, ci); break;
                     }
                 }
 
