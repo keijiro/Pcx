@@ -18,7 +18,7 @@ namespace Pcx
     {
         #region ScriptedImporter implementation
 
-        public enum ContainerType { Mesh, ComputeBuffer, Texture  }
+        public enum ContainerType { Mesh, ComputeBuffer, Texture }
 
         [SerializeField] ContainerType _containerType = ContainerType.Mesh;
 
@@ -90,7 +90,8 @@ namespace Pcx
 
         #region Internal data structure
 
-        enum DataProperty {
+        enum DataProperty
+        {
             Invalid,
             R8, G8, B8, A8,
             R16, G16, B16, A16,
@@ -128,18 +129,21 @@ namespace Pcx
         class DataHeader
         {
             public List<DataProperty> properties = new List<DataProperty>();
-            public int vertexCount = -1;
+            public int vertexCount = 0;
+            public int triangleCount = 0;
         }
 
         class DataBody
         {
             public List<Vector3> vertices;
             public List<Color32> colors;
+            public List<int> triangles;
 
-            public DataBody(int vertexCount)
+            public DataBody(int vertexCount, int triangleCount)
             {
                 vertices = new List<Vector3>(vertexCount);
                 colors = new List<Color32>(vertexCount);
+                triangles = new List<int>(triangleCount);
             }
 
             public void AddPoint(
@@ -149,6 +153,13 @@ namespace Pcx
             {
                 vertices.Add(new Vector3(x, y, z));
                 colors.Add(new Color32(r, g, b, a));
+            }
+
+            public void AddTriangle(int v1, int v2, int v3)
+            {
+                triangles.Add(v1);
+                triangles.Add(v2);
+                triangles.Add(v3);
             }
         }
 
@@ -172,11 +183,13 @@ namespace Pcx
 
                 mesh.SetVertices(body.vertices);
                 mesh.SetColors(body.colors);
+                mesh.SetTriangles(body.triangles, 0);
 
-                mesh.SetIndices(
-                    Enumerable.Range(0, header.vertexCount).ToArray(),
-                    MeshTopology.Points, 0
-                );
+                // the below line is only necessary for points only
+                //mesh.SetIndices(
+                //    Enumerable.Range(0, header.vertexCount).ToArray(),
+                //    MeshTopology.Points, 0
+                //);
 
                 mesh.UploadMeshData(true);
                 return mesh;
@@ -246,7 +259,7 @@ namespace Pcx
                     "Should be binary/little endian.");
 
             // Read header contents.
-            for (var skip = false;;)
+            for (var skip = false; ;)
             {
                 // Read a line and split it with white space.
                 line = reader.ReadLine();
@@ -262,9 +275,14 @@ namespace Pcx
                         data.vertexCount = Convert.ToInt32(col[2]);
                         skip = false;
                     }
+                    else if (col[1] == "face")
+                    {
+                        data.triangleCount = Convert.ToInt32(col[2]);
+                        skip = true;
+                    }
                     else
                     {
-                        // Don't read elements other than vertices.
+                        // Don't read elements other than vertices or triangles.
                         skip = true;
                     }
                 }
@@ -279,13 +297,13 @@ namespace Pcx
                     // Parse the property name entry.
                     switch (col[2])
                     {
-                        case "red"  : prop = DataProperty.R8; break;
+                        case "red": prop = DataProperty.R8; break;
                         case "green": prop = DataProperty.G8; break;
-                        case "blue" : prop = DataProperty.B8; break;
+                        case "blue": prop = DataProperty.B8; break;
                         case "alpha": prop = DataProperty.A8; break;
-                        case "x"    : prop = DataProperty.SingleX; break;
-                        case "y"    : prop = DataProperty.SingleY; break;
-                        case "z"    : prop = DataProperty.SingleZ; break;
+                        case "x": prop = DataProperty.SingleX; break;
+                        case "y": prop = DataProperty.SingleY; break;
+                        case "z": prop = DataProperty.SingleZ; break;
                     }
 
                     // Check the property type.
@@ -311,7 +329,7 @@ namespace Pcx
                         if (GetPropertySize(prop) != 2)
                             throw new ArgumentException("Invalid property type ('" + line + "').");
                     }
-                    else if (col[1] == "int"   || col[1] == "uint"   || col[1] == "float" ||
+                    else if (col[1] == "int" || col[1] == "uint" || col[1] == "float" ||
                              col[1] == "int32" || col[1] == "uint32" || col[1] == "float32")
                     {
                         if (prop == DataProperty.Invalid)
@@ -319,7 +337,7 @@ namespace Pcx
                         else if (GetPropertySize(prop) != 4)
                             throw new ArgumentException("Invalid property type ('" + line + "').");
                     }
-                    else if (col[1] == "int64"  || col[1] == "uint64" ||
+                    else if (col[1] == "int64" || col[1] == "uint64" ||
                              col[1] == "double" || col[1] == "float64")
                     {
                         switch (prop)
@@ -349,11 +367,12 @@ namespace Pcx
 
         DataBody ReadDataBody(DataHeader header, BinaryReader reader)
         {
-            var data = new DataBody(header.vertexCount);
+            var data = new DataBody(header.vertexCount, header.triangleCount);
 
             float x = 0, y = 0, z = 0;
             Byte r = 255, g = 255, b = 255, a = 255;
 
+            // read vertices xyzrgba
             for (var i = 0; i < header.vertexCount; i++)
             {
                 foreach (var prop in header.properties)
@@ -384,8 +403,19 @@ namespace Pcx
                         case DataProperty.Data64: reader.BaseStream.Position += 8; break;
                     }
                 }
-
                 data.AddPoint(x, y, z, r, g, b, a);
+            }
+
+            int v1, v2, v3;
+
+            // read triangles
+            for (var i = 0; i < header.triangleCount; i++)
+            {
+                reader.ReadByte(); // number of vertices of the triangle, always 3
+                v1 = reader.ReadInt32();
+                v2 = reader.ReadInt32();
+                v3 = reader.ReadInt32();
+                data.AddTriangle(v1, v2, v3);
             }
 
             return data;
