@@ -183,13 +183,17 @@ namespace Pcx
 
                 mesh.SetVertices(body.vertices);
                 mesh.SetColors(body.colors);
-                mesh.SetTriangles(body.triangles, 0);
-
-                // the below line is only necessary for points only
-                //mesh.SetIndices(
-                //    Enumerable.Range(0, header.vertexCount).ToArray(),
-                //    MeshTopology.Points, 0
-                //);
+                if (body.triangles.Count > 0)
+                {
+                    mesh.SetTriangles(body.triangles, 0);
+                }
+                else
+                {
+                    mesh.SetIndices(
+                        Enumerable.Range(0, header.vertexCount).ToArray(),
+                        MeshTopology.Points, 0
+                    );
+                }
 
                 mesh.UploadMeshData(true);
                 return mesh;
