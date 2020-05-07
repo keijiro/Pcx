@@ -12,6 +12,7 @@ Shader "Point Cloud/Point"
     SubShader
     {
         Tags { "RenderType"="Opaque" }
+		Cull Off
         Pass
         {
             CGPROGRAM
