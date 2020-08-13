@@ -1,7 +1,7 @@
 #pragma kernel Main
 
 #include "HLSLSupport.cginc"
-#include "../Pcx/Runtime/Shaders/Common.cginc"
+#include "Packages/jp.keijiro.pcx/Runtime/Shaders/Common.cginc"
 
 StructuredBuffer<float4> SourceBuffer;
 RWStructuredBuffer<float4> OutputBuffer;
