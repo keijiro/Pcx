@@ -25,6 +25,7 @@ namespace Pcx
         public enum ContainerType { Mesh, ComputeBuffer, Texture  }
 
         [SerializeField] ContainerType _containerType = ContainerType.Mesh;
+        [SerializeField] bool _readWriteEnabled = false;
 
         public override void OnImportAsset(AssetImportContext context)
         {
@@ -182,7 +183,8 @@ namespace Pcx
                     MeshTopology.Points, 0
                 );
 
-                mesh.UploadMeshData(true);
+                // allow read/write by setting bool to false
+                mesh.UploadMeshData(!_readWriteEnabled);
                 return mesh;
             }
             catch (Exception e)
