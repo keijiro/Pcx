@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "com.unity.timeline": "1.4.2",
+    "com.unity.modules.imgui": "1.0.0"
+  }
+}

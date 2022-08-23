@@ -1,8 +1,13 @@
 fileFormatVersion: 2
 guid: 08fb0939e6171ce4eac591c16d8cbfa6
-timeCreated: 1509548637
-licenseType: Pro
 ScriptedImporter:
+  fileIDToRecycleName:
+    100000: prefab/New Game Object
+    400000: prefab/New Game Object/Transform
+    11400000: prefab/New Game Object/MonoBehaviour-Pcx.PointCloudRenderer
+    11400002: data
+    100100000: prefab
+  externalObjects: {}
   userData: 
   assetBundleName: 
   assetBundleVariant: 

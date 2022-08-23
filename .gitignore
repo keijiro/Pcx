@@ -10,9 +10,9 @@ Desktop.ini
 
 # Unity
 /Library
+/Logs
 /Temp
-/UnityPackageManager
-/Packages
+/UserSettings
 
 /Extras/pcx-strip/*.o
 /Extras/pcx-strip/pcx-strip

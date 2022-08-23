@@ -11,7 +11,7 @@ namespace Pcx
     {
         #region Editable attributes
 
-        [SerializeField] PointCloudData _sourceData;
+        [SerializeField] PointCloudData _sourceData = null;
 
         public PointCloudData sourceData {
             get { return _sourceData; }
@@ -42,8 +42,8 @@ namespace Pcx
 
         #region Internal resources
 
-        [SerializeField, HideInInspector] Shader _pointShader;
-        [SerializeField, HideInInspector] Shader _diskShader;
+        [SerializeField, HideInInspector] Shader _pointShader = null;
+        [SerializeField, HideInInspector] Shader _diskShader = null;
 
         #endregion
 
@@ -112,7 +112,11 @@ namespace Pcx
                 _pointMaterial.SetColor("_Tint", _pointTint);
                 _pointMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
                 _pointMaterial.SetBuffer("_PointBuffer", pointBuffer);
+                #if UNITY_2019_1_OR_NEWER
+                Graphics.DrawProceduralNow(MeshTopology.Points, pointBuffer.count, 1);
+                #else
                 Graphics.DrawProcedural(MeshTopology.Points, pointBuffer.count, 1);
+                #endif
             }
             else
             {
@@ -121,7 +125,11 @@ namespace Pcx
                 _diskMaterial.SetMatrix("_Transform", transform.localToWorldMatrix);
                 _diskMaterial.SetBuffer("_PointBuffer", pointBuffer);
                 _diskMaterial.SetFloat("_PointSize", pointSize);
+                #if UNITY_2019_1_OR_NEWER
+                Graphics.DrawProceduralNow(MeshTopology.Points, pointBuffer.count, 1);
+                #else
                 Graphics.DrawProcedural(MeshTopology.Points, pointBuffer.count, 1);
+                #endif
             }
         }
 
